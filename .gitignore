@@ -1,0 +1,35 @@
+# ── CodeIgniter 4 ──────────────────────────────────────────────────────────
+booking_website/vendor/
+booking_website/.env
+booking_website/writable/logs/*
+booking_website/writable/cache/*
+booking_website/writable/session/*
+booking_website/writable/debugbar/*
+booking_website/writable/uploads/*
+!booking_website/writable/logs/.gitkeep
+!booking_website/writable/cache/.gitkeep
+!booking_website/writable/session/.gitkeep
+
+# ── Flutter mobile app (already in separate repo) ───────────────────────────
+booking_mobilapp/.dart_tool/
+booking_mobilapp/build/
+booking_mobilapp/.packages
+booking_mobilapp/.flutter-plugins
+booking_mobilapp/.flutter-plugins-dependencies
+booking_mobilapp/ios/Pods/
+booking_mobilapp/android/.gradle/
+booking_mobilapp/android/local.properties
+booking_mobilapp/android/app/debug/
+booking_mobilapp/android/app/profile/
+booking_mobilapp/android/app/release/
+
+# ── IDE & OS ────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Lock files ───────────────────────────────────────────────────────────────
+booking_website/composer.lock
