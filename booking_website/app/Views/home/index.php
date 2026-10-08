@@ -62,20 +62,27 @@ $destImages = [
                   <option value="">All Destinations</option>
                   <?php
                   // Cities from DB — when super admin adds a city it shows here
-                  if(!empty($cities) && isset($cities[0]['name'])):
+                  if(!empty($cities)):
                     foreach($cities as $c):
+                      $cName = is_array($c) ? ($c['name'] ?? $c) : $c;
+                      $cRegion = is_array($c) ? ($c['region'] ?? '') : '';
+                      $cHotels = is_array($c) ? (int)($c['hotel_count'] ?? 0) : 0;
                   ?>
-                  <option value="<?= esc($c['name']) ?>"><?= esc($c['name']) ?><?= !empty($c['region'])?' — '.esc($c['region']):'' ?></option>
+                  <option value="<?= esc($cName) ?>">
+                    <?= esc($cName) ?><?= $cRegion ? ' — '.esc($cRegion) : '' ?><?= $cHotels > 0 ? " ({$cHotels} hotel".($cHotels>1?'s':'').")" : '' ?>
+                  </option>
                   <?php endforeach; endif; ?>
                 </select>
               </div>
               <div class="col-md-2">
                 <label class="form-label fw-600 small text-muted mb-1"><i class="bi bi-calendar-event text-primary me-1"></i>Check-In</label>
-                <input type="date" name="check_in" class="form-control">
+                <input type="date" name="check_in" id="homeCheckIn" class="form-control"
+                       min="<?= date('Y-m-d') ?>" value="<?= date('Y-m-d') ?>">
               </div>
               <div class="col-md-2">
                 <label class="form-label fw-600 small text-muted mb-1"><i class="bi bi-calendar2-check text-primary me-1"></i>Check-Out</label>
-                <input type="date" name="check_out" class="form-control">
+                <input type="date" name="check_out" id="homeCheckOut" class="form-control"
+                       min="<?= date('Y-m-d', strtotime('+1 day')) ?>" value="<?= date('Y-m-d', strtotime('+1 day')) ?>">
               </div>
               <div class="col-md-2">
                 <label class="form-label fw-600 small text-muted mb-1"><i class="bi bi-people-fill text-primary me-1"></i>Guests</label>
@@ -363,6 +370,31 @@ function switchTab(btn, type) {
   btn.classList.add('active');
   document.getElementById('searchType').value = type === 'hotels' ? '' : type.charAt(0).toUpperCase() + type.slice(1);
 }
+
+// ── Date enforcement on home search form ─────────────────────────────────
+(function() {
+  const ci = document.getElementById('homeCheckIn');
+  const co = document.getElementById('homeCheckOut');
+  if (!ci || !co) return;
+
+  const today    = new Date().toISOString().split('T')[0];
+  ci.min = today;
+  if (!ci.value || ci.value < today) ci.value = today;
+
+  function updateCoMin() {
+    const next = new Date(new Date(ci.value).getTime() + 86400000).toISOString().split('T')[0];
+    co.min = next;
+    if (!co.value || co.value <= ci.value) co.value = next;
+  }
+  updateCoMin();
+
+  ci.addEventListener('change', updateCoMin);
+  co.addEventListener('change', function() {
+    if (co.value <= ci.value) {
+      co.value = new Date(new Date(ci.value).getTime() + 86400000).toISOString().split('T')[0];
+    }
+  });
+})();
 </script>
 <?= $this->endSection() ?>
 

@@ -6,6 +6,11 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
+// ── Handle CORS preflight (OPTIONS) for all API routes ────────────────────────
+$routes->options('api/v1/(:any)', static function () {
+    return response()->setStatusCode(204);
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  API v1  —  consumed by Flutter mobile app
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,6 +166,7 @@ $routes->group('admin', ['namespace' => 'App\Controllers\Admin'], function($r) {
         $r->post('hotels/(:num)/rooms/(:num)/toggle',           'SubAdminController::toggleRoom/$1/$2');
         $r->get('hotels/(:num)/assign-manager',                 'SubAdminController::assignManager/$1');
         $r->post('hotels/(:num)/assign-manager',                'SubAdminController::assignManager/$1');
+        $r->get('managers',                                     'SubAdminController::managers');
         $r->get('bookings',                                     'SubAdminController::bookings');
         $r->get('brokers',                                      'SubAdminController::brokers');
         $r->get('brokers/create',                               'SubAdminController::createBroker');

@@ -22,6 +22,7 @@ class SubAdminController extends BaseAdminController
         $bookings = $db->query("SELECT COUNT(*) AS cnt FROM bookings b JOIN hotels h ON b.hotel_id=h.id WHERE h.city=?", [$city])->getRowArray();
         $pending  = $db->query("SELECT COUNT(*) AS cnt FROM bookings b JOIN hotels h ON b.hotel_id=h.id WHERE h.city=? AND b.status='pending'", [$city])->getRowArray();
         $brokers  = $db->query("SELECT COUNT(*) AS cnt FROM brokers WHERE sub_admin_id=? AND status='active'", [$this->adminId])->getRowArray();
+        $managers = $db->query("SELECT COUNT(*) AS cnt FROM hotel_managers hm JOIN hotels h ON hm.hotel_id=h.id WHERE h.city=? AND hm.sub_admin_id=?", [$city, $this->adminId])->getRowArray();
         $revenue  = $db->query("SELECT COALESCE(SUM(b.total_price),0) AS total FROM bookings b JOIN hotels h ON b.hotel_id=h.id WHERE h.city=? AND b.status IN ('confirmed','completed')", [$city])->getRowArray();
 
         $recentBookings = $db->query(
@@ -38,6 +39,7 @@ class SubAdminController extends BaseAdminController
             'bookingCount'   => (int)$bookings['cnt'],
             'pendingCount'   => (int)$pending['cnt'],
             'brokerCount'    => (int)$brokers['cnt'],
+            'managerCount'   => (int)$managers['cnt'],
             'revenue'        => (float)$revenue['total'],
             'recentBookings' => $recentBookings,
         ]));
@@ -48,13 +50,30 @@ class SubAdminController extends BaseAdminController
     {
         $search = $this->request->getGet('q') ?? '';
         $db     = \Config\Database::connect();
-        $sql    = "SELECT h.*, COUNT(rt.id) AS room_count,
-                          (SELECT image_url FROM hotel_images WHERE hotel_id=h.id AND is_primary=TRUE LIMIT 1) AS img
-                   FROM hotels h LEFT JOIN room_types rt ON rt.hotel_id=h.id
-                   WHERE h.city = ?";
-        $binds  = [$this->city];
-        if ($search) { $sql .= ' AND (h.name ILIKE ? OR h.address ILIKE ?)'; $binds[] = "%$search%"; $binds[] = "%$search%"; }
-        $sql .= ' GROUP BY h.id ORDER BY h.name';
+
+        // Include manager info + broker info per hotel
+        $sql = "SELECT h.*,
+                       COUNT(DISTINCT rt.id) AS room_count,
+                       (SELECT image_url FROM hotel_images WHERE hotel_id=h.id AND is_primary=TRUE LIMIT 1) AS img,
+                       mgr_au.full_name  AS manager_name,
+                       mgr_au.email      AS manager_email,
+                       mgr_au.phone      AS manager_phone,
+                       brk_au.full_name  AS broker_name,
+                       hm.id             AS hm_id
+                FROM hotels h
+                LEFT JOIN room_types rt ON rt.hotel_id=h.id
+                LEFT JOIN hotel_managers hm ON hm.hotel_id=h.id
+                LEFT JOIN admin_users mgr_au ON mgr_au.id=hm.admin_id
+                LEFT JOIN brokers bk ON bk.id=hm.broker_id
+                LEFT JOIN admin_users brk_au ON brk_au.id=bk.admin_id
+                WHERE h.city = ?";
+        $binds = [$this->city];
+        if ($search) {
+            $sql   .= ' AND (h.name ILIKE ? OR h.address ILIKE ?)';
+            $binds[] = "%$search%";
+            $binds[] = "%$search%";
+        }
+        $sql .= ' GROUP BY h.id, mgr_au.full_name, mgr_au.email, mgr_au.phone, brk_au.full_name, hm.id ORDER BY h.name';
         $hotels = $db->query($sql, $binds)->getResultArray();
 
         return view('admin/subadmin/hotels', $this->viewData([
@@ -65,32 +84,109 @@ class SubAdminController extends BaseAdminController
         ]));
     }
 
-    // ── Add Hotel ─────────────────────────────────────────────────────────────
+    // ── Add Hotel (with optional inline manager registration) ─────────────────
     public function addHotel()
     {
+        $db      = \Config\Database::connect();
+        $brokers = $this->brokerModel->getBySubAdmin($this->adminId);
+
         if ($this->request->getMethod() === 'POST') {
-            $d   = $this->request->getPost();
-            $db  = \Config\Database::connect();
+            $d = $this->request->getPost();
+
+            // ── 1. Validate hotel required fields ──────────────────────────
+            if (empty($d['name']) || empty($d['address']) || empty($d['price_per_night'])) {
+                return redirect()->back()->withInput()->with('error', 'Hotel name, address and price are required.');
+            }
+
+            // ── 2. Validate manager fields if provided ─────────────────────
+            $hasManager = !empty($d['mgr_name']) || !empty($d['mgr_email']) || !empty($d['mgr_password']);
+            if ($hasManager) {
+                if (empty($d['mgr_name']) || empty($d['mgr_email']) || empty($d['mgr_password'])) {
+                    return redirect()->back()->withInput()->with('error', 'Manager name, email and password are all required.');
+                }
+                if (strlen($d['mgr_password']) < 6) {
+                    return redirect()->back()->withInput()->with('error', 'Manager password must be at least 6 characters.');
+                }
+                if ($this->adminModel->findByEmail($d['mgr_email'])) {
+                    return redirect()->back()->withInput()->with('error', 'Manager email already exists. Use a different email.');
+                }
+            }
+
+            // ── 3. Insert hotel ────────────────────────────────────────────
+            $lat = $d['latitude']  !== '' && $d['latitude']  !== null ? (float)$d['latitude']  : 0.0;
+            $lng = $d['longitude'] !== '' && $d['longitude'] !== null ? (float)$d['longitude'] : 0.0;
+            // Clamp to valid geographic range (avoids NUMERIC(12,8) overflow)
+            $lat = max(-90.0,  min(90.0,  $lat));
+            $lng = max(-180.0, min(180.0, $lng));
+
             $res = $db->query(
                 "INSERT INTO hotels (name, city, address, description, type, price_per_night, latitude, longitude, is_active, is_featured)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE, FALSE) RETURNING id",
-                [$d['name'], $this->city, $d['address'], $d['description'] ?? '', $d['type'] ?? 'Hotel',
-                 (float)($d['price_per_night'] ?? 0), (float)($d['latitude'] ?? 0), (float)($d['longitude'] ?? 0)]
+                [
+                    $d['name'], $this->city, $d['address'],
+                    $d['description'] ?? '',
+                    $d['type']        ?? 'Hotel',
+                    (float)($d['price_per_night'] ?? 0),
+                    $lat,
+                    $lng,
+                ]
             )->getRowArray();
             $hotelId = (int)($res['id'] ?? 0);
 
-            // Add primary image if provided
-            if (!empty($d['image_url'])) {
-                $db->query('INSERT INTO hotel_images (hotel_id, image_url, sort_order, is_primary) VALUES (?,?,0,TRUE)',
-                    [$hotelId, $d['image_url']]);
+            if (!$hotelId) {
+                return redirect()->back()->withInput()->with('error', 'Failed to create hotel. Please try again.');
             }
-            return redirect()->to('/admin/subadmin/hotels')->with('success', 'Hotel added successfully.');
+
+            // ── 4. Add primary image ───────────────────────────────────────
+            if (!empty($d['image_url'])) {
+                $db->query(
+                    'INSERT INTO hotel_images (hotel_id, image_url, sort_order, is_primary) VALUES (?,?,0,TRUE)',
+                    [$hotelId, $d['image_url']]
+                );
+            }
+
+            // ── 5. Add amenities ───────────────────────────────────────────
+            if (!empty($d['amenities'])) {
+                foreach (array_filter(array_map('trim', explode(',', $d['amenities']))) as $a) {
+                    $db->query('INSERT INTO hotel_amenities (hotel_id, amenity) VALUES (?,?)', [$hotelId, $a]);
+                }
+            }
+
+            // ── 6. Create hotel manager account ───────────────────────────
+            if ($hasManager) {
+                $mgrId = $this->adminModel->createAdmin([
+                    'full_name' => trim($d['mgr_name']),
+                    'email'     => trim($d['mgr_email']),
+                    'phone'     => $d['mgr_phone'] ?? null,
+                    'password'  => $d['mgr_password'],
+                    'role'      => 'hotel_manager',
+                ], $this->adminId);
+
+                if ($mgrId) {
+                    $brokerId  = !empty($d['broker_id']) ? (int)$d['broker_id'] : null;
+                    $this->managerModel->assignManager($mgrId, $hotelId, $brokerId, $this->adminId);
+
+                    // Link broker ↔ hotel
+                    if ($brokerId) {
+                        $brokerRow = $db->query('SELECT id FROM brokers WHERE admin_id=? LIMIT 1', [$brokerId])->getRowArray();
+                        if ($brokerRow) $this->brokerModel->linkHotel((int)$brokerRow['id'], $hotelId);
+                    }
+
+                    return redirect()->to('/admin/subadmin/hotels')
+                        ->with('success', "Hotel '{$d['name']}' added and manager '{$d['mgr_name']}' registered. Login: {$d['mgr_email']}");
+                }
+            }
+
+            return redirect()->to('/admin/subadmin/hotels')->with('success', "Hotel '{$d['name']}' added successfully.");
         }
+
         return view('admin/subadmin/hotel_form', $this->viewData([
-            'pageTitle' => 'Add Hotel',
-            'city'      => $this->city,
-            'hotel'     => null,
-            'hotelTypes'=> ['Hotel','Resort','Lodge','Guest House','Boutique'],
+            'pageTitle'  => 'Add Hotel',
+            'city'       => $this->city,
+            'hotel'      => null,
+            'manager'    => null,
+            'hotelTypes' => ['Hotel','Resort','Lodge','Guest House','Boutique','Hostel'],
+            'brokers'    => $brokers,
         ]));
     }
 
@@ -103,25 +199,54 @@ class SubAdminController extends BaseAdminController
 
         if ($this->request->getMethod() === 'POST') {
             $d = $this->request->getPost();
+
+            $lat = $d['latitude']  !== '' && $d['latitude']  !== null ? (float)$d['latitude']  : 0.0;
+            $lng = $d['longitude'] !== '' && $d['longitude'] !== null ? (float)$d['longitude'] : 0.0;
+            $lat = max(-90.0,  min(90.0,  $lat));
+            $lng = max(-180.0, min(180.0, $lng));
+
             $db->query(
                 "UPDATE hotels SET name=?, address=?, description=?, type=?, price_per_night=?, latitude=?, longitude=?, updated_at=NOW() WHERE id=?",
-                [$d['name'], $d['address'], $d['description']??'', $d['type']??'Hotel',
-                 (float)($d['price_per_night']??0), (float)($d['latitude']??0), (float)($d['longitude']??0), $id]
+                [
+                    $d['name'], $d['address'], $d['description'] ?? '',
+                    $d['type'] ?? 'Hotel',
+                    (float)($d['price_per_night'] ?? 0),
+                    $lat,
+                    $lng,
+                    $id,
+                ]
             );
+
+            // Update primary image
             if (!empty($d['image_url'])) {
-                $db->query('UPDATE hotel_images SET image_url=? WHERE hotel_id=? AND is_primary=TRUE', [$d['image_url'], $id]);
-                $rows = $db->query('SELECT id FROM hotel_images WHERE hotel_id=? AND is_primary=TRUE', [$id])->getResultArray();
-                if (empty($rows)) $db->query('INSERT INTO hotel_images (hotel_id,image_url,sort_order,is_primary) VALUES (?,?,0,TRUE)', [$id,$d['image_url']]);
+                $existing = $db->query('SELECT id FROM hotel_images WHERE hotel_id=? AND is_primary=TRUE', [$id])->getRowArray();
+                if ($existing) {
+                    $db->query('UPDATE hotel_images SET image_url=? WHERE hotel_id=? AND is_primary=TRUE', [$d['image_url'], $id]);
+                } else {
+                    $db->query('INSERT INTO hotel_images (hotel_id,image_url,sort_order,is_primary) VALUES (?,?,0,TRUE)', [$id, $d['image_url']]);
+                }
             }
-            return redirect()->to('/admin/subadmin/hotels')->with('success', 'Hotel updated.');
+
+            return redirect()->to('/admin/subadmin/hotels')->with('success', 'Hotel updated successfully.');
         }
 
-        $hotel['images'] = $db->query('SELECT image_url FROM hotel_images WHERE hotel_id=? ORDER BY sort_order', [$id])->getResultArray();
+        $hotel['images']   = $db->query('SELECT image_url FROM hotel_images WHERE hotel_id=? ORDER BY sort_order', [$id])->getResultArray();
+        $hotel['amenities']= $db->query('SELECT amenity FROM hotel_amenities WHERE hotel_id=? ORDER BY id', [$id])->getResultArray();
+        $manager           = $db->query(
+            "SELECT au.*, hm.broker_id, hm.id AS hm_id
+             FROM hotel_managers hm
+             JOIN admin_users au ON au.id=hm.admin_id
+             WHERE hm.hotel_id=? LIMIT 1", [$id]
+        )->getRowArray();
+        $brokers = $this->brokerModel->getBySubAdmin($this->adminId);
+
         return view('admin/subadmin/hotel_form', $this->viewData([
-            'pageTitle' => 'Edit Hotel',
-            'city'      => $this->city,
-            'hotel'     => $hotel,
-            'hotelTypes'=> ['Hotel','Resort','Lodge','Guest House','Boutique'],
+            'pageTitle'  => 'Edit Hotel — ' . esc($hotel['name']),
+            'city'       => $this->city,
+            'hotel'      => $hotel,
+            'manager'    => $manager,
+            'hotelTypes' => ['Hotel','Resort','Lodge','Guest House','Boutique','Hostel'],
+            'brokers'    => $brokers,
         ]));
     }
 
@@ -129,7 +254,7 @@ class SubAdminController extends BaseAdminController
     public function deleteHotel(int $id)
     {
         $db    = \Config\Database::connect();
-        $hotel = $db->query('SELECT id FROM hotels WHERE id=? AND city=?', [$id,$this->city])->getRowArray();
+        $hotel = $db->query('SELECT id FROM hotels WHERE id=? AND city=?', [$id, $this->city])->getRowArray();
         if (!$hotel) return redirect()->to('/admin/subadmin/hotels')->with('error', 'Not found.');
         $db->query('UPDATE hotels SET is_active=FALSE WHERE id=?', [$id]);
         return redirect()->to('/admin/subadmin/hotels')->with('success', 'Hotel deactivated.');
@@ -139,7 +264,7 @@ class SubAdminController extends BaseAdminController
     public function rooms(int $hotelId)
     {
         $db    = \Config\Database::connect();
-        $hotel = $db->query('SELECT * FROM hotels WHERE id=? AND city=?', [$hotelId,$this->city])->getRowArray();
+        $hotel = $db->query('SELECT * FROM hotels WHERE id=? AND city=?', [$hotelId, $this->city])->getRowArray();
         if (!$hotel) return redirect()->to('/admin/subadmin/hotels')->with('error', 'Not found.');
 
         $search = $this->request->getGet('q') ?? '';
@@ -161,7 +286,7 @@ class SubAdminController extends BaseAdminController
     public function addRoom(int $hotelId)
     {
         $db    = \Config\Database::connect();
-        $hotel = $db->query('SELECT * FROM hotels WHERE id=? AND city=?', [$hotelId,$this->city])->getRowArray();
+        $hotel = $db->query('SELECT * FROM hotels WHERE id=? AND city=?', [$hotelId, $this->city])->getRowArray();
         if (!$hotel) return redirect()->to('/admin/subadmin/hotels')->with('error', 'Not found.');
 
         if ($this->request->getMethod() === 'POST') {
@@ -176,11 +301,11 @@ class SubAdminController extends BaseAdminController
                 'bed_type'        => $d['bed_type'],
                 'image_url'       => $d['image_url'] ?? null,
                 'price_per_night' => $d['price_per_night'],
-                'size_sqm'        => $d['size_sqm'] ?? 0,
-                'max_guests'      => $d['max_guests'] ?? 2,
+                'size_sqm'        => $d['size_sqm']   ?? 0,
+                'max_guests'      => $d['max_guests']  ?? 2,
                 'features'        => $features,
             ]);
-            return redirect()->to("/admin/subadmin/hotels/$hotelId/rooms")->with('success', 'Room added successfully.');
+            return redirect()->to("/admin/subadmin/hotels/$hotelId/rooms")->with('success', 'Room added.');
         }
         return view('admin/subadmin/room_form', $this->viewData([
             'pageTitle' => 'Add Room',
@@ -193,7 +318,7 @@ class SubAdminController extends BaseAdminController
     public function editRoom(int $hotelId, int $roomId)
     {
         $db    = \Config\Database::connect();
-        $hotel = $db->query('SELECT * FROM hotels WHERE id=? AND city=?', [$hotelId,$this->city])->getRowArray();
+        $hotel = $db->query('SELECT * FROM hotels WHERE id=? AND city=?', [$hotelId, $this->city])->getRowArray();
         $room  = $this->managerModel->getRoom($roomId);
         if (!$hotel || !$room) return redirect()->back()->with('error', 'Not found.');
 
@@ -205,19 +330,17 @@ class SubAdminController extends BaseAdminController
                 'bed_type'        => $d['bed_type'],
                 'image_url'       => $d['image_url'] ?? null,
                 'price_per_night' => $d['price_per_night'],
-                'size_sqm'        => $d['size_sqm'] ?? 0,
-                'max_guests'      => $d['max_guests'] ?? 2,
+                'size_sqm'        => $d['size_sqm']   ?? 0,
+                'max_guests'      => $d['max_guests']  ?? 2,
                 'features'        => $features,
                 'is_available'    => isset($d['is_available']),
             ]);
             return redirect()->to("/admin/subadmin/hotels/$hotelId/rooms")->with('success', 'Room updated.');
         }
 
-        // Parse features array
         $room['features_str'] = '';
         if (!empty($room['features'])) {
-            $f = trim($room['features'], '{}');
-            $room['features_str'] = str_replace('"', '', $f);
+            $room['features_str'] = str_replace('"', '', trim($room['features'], '{}'));
         }
         return view('admin/subadmin/room_form', $this->viewData([
             'pageTitle' => 'Edit Room',
@@ -273,6 +396,95 @@ class SubAdminController extends BaseAdminController
         ]));
     }
 
+    // ── Managers list ─────────────────────────────────────────────────────────
+    public function managers()
+    {
+        $managers = $this->managerModel->getBySubAdmin($this->adminId);
+        return view('admin/subadmin/managers', $this->viewData([
+            'pageTitle' => "Hotel Managers — {$this->city}",
+            'managers'  => $managers,
+            'city'      => $this->city,
+        ]));
+    }
+
+    // ── Assign/Replace Hotel Manager ──────────────────────────────────────────
+    public function assignManager(int $hotelId)
+    {
+        $db    = \Config\Database::connect();
+        $hotel = $db->query('SELECT id,name FROM hotels WHERE id=? AND city=?', [$hotelId, $this->city])->getRowArray();
+        if (!$hotel) return redirect()->back()->with('error', 'Hotel not found.');
+
+        // Load existing manager for this hotel (if any)
+        $existing = $db->query(
+            "SELECT au.*, hm.broker_id, hm.id AS hm_id
+             FROM hotel_managers hm
+             JOIN admin_users au ON au.id=hm.admin_id
+             WHERE hm.hotel_id=? LIMIT 1", [$hotelId]
+        )->getRowArray();
+
+        if ($this->request->getMethod() === 'POST') {
+            $d = $this->request->getPost();
+
+            // Decide: create new OR reassign existing admin_user
+            $mgrId = null;
+            if (!empty($d['existing_manager_id'])) {
+                // Reassign an existing manager
+                $mgrId = (int)$d['existing_manager_id'];
+            } else {
+                // Create new manager account
+                if (empty($d['full_name']) || empty($d['email']) || empty($d['password'])) {
+                    return redirect()->back()->withInput()->with('error', 'Full name, email and password are required.');
+                }
+                if (strlen($d['password']) < 6) {
+                    return redirect()->back()->withInput()->with('error', 'Password must be at least 6 characters.');
+                }
+                if ($this->adminModel->findByEmail($d['email'])) {
+                    return redirect()->back()->withInput()->with('error', 'Email already exists.');
+                }
+                $mgrId = $this->adminModel->createAdmin([
+                    'full_name' => trim($d['full_name']),
+                    'email'     => trim($d['email']),
+                    'phone'     => $d['phone'] ?? null,
+                    'password'  => $d['password'],
+                    'role'      => 'hotel_manager',
+                ], $this->adminId);
+            }
+
+            if ($mgrId) {
+                $brokerId  = !empty($d['broker_id']) ? (int)$d['broker_id'] : null;
+                $this->managerModel->assignManager($mgrId, $hotelId, $brokerId, $this->adminId);
+                if ($brokerId) {
+                    $brokerRow = $db->query('SELECT id FROM brokers WHERE admin_id=? LIMIT 1', [$brokerId])->getRowArray();
+                    if ($brokerRow) $this->brokerModel->linkHotel((int)$brokerRow['id'], $hotelId);
+                }
+                return redirect()->to('/admin/subadmin/hotels')
+                    ->with('success', 'Hotel manager assigned to ' . esc($hotel['name']) . '.');
+            }
+            return redirect()->back()->with('error', 'Failed to assign manager.');
+        }
+
+        // Load all existing managers this sub-admin created (to allow reassignment)
+        $allManagers = $db->query(
+            "SELECT au.id, au.full_name, au.email
+             FROM admin_users au
+             JOIN hotel_managers hm ON hm.admin_id=au.id
+             WHERE hm.sub_admin_id=? AND au.role='hotel_manager' AND au.status='active'
+             ORDER BY au.full_name",
+            [$this->adminId]
+        )->getResultArray();
+
+        $brokers = $this->brokerModel->getBySubAdmin($this->adminId);
+
+        return view('admin/subadmin/assign_manager', $this->viewData([
+            'pageTitle'   => "Assign Manager — {$hotel['name']}",
+            'hotel'       => $hotel,
+            'existing'    => $existing,
+            'allManagers' => $allManagers,
+            'brokers'     => $brokers,
+            'city'        => $this->city,
+        ]));
+    }
+
     // ── Brokers management ────────────────────────────────────────────────────
     public function brokers()
     {
@@ -294,8 +506,7 @@ class SubAdminController extends BaseAdminController
             if ($this->adminModel->findByEmail($d['email'])) {
                 return redirect()->back()->withInput()->with('error', 'Email already exists.');
             }
-            $d['role'] = 'broker';
-            $newId = $this->adminModel->createAdmin($d, $this->adminId);
+            $newId = $this->adminModel->createAdmin(array_merge($d, ['role' => 'broker']), $this->adminId);
             if ($newId) {
                 \Config\Database::connect()->query(
                     'INSERT INTO brokers (admin_id, sub_admin_id, city, commission_pct) VALUES (?,?,?,?)',
@@ -320,8 +531,11 @@ class SubAdminController extends BaseAdminController
         }
         if ($this->request->getMethod() === 'POST') {
             $d = $this->request->getPost();
-            $this->adminModel->update($id, ['full_name'=>$d['full_name'],'phone'=>$d['phone'],'status'=>$d['status']]);
-            \Config\Database::connect()->query('UPDATE brokers SET commission_pct=? WHERE admin_id=?', [(float)($d['commission_pct']??0), $id]);
+            $this->adminModel->update($id, ['full_name' => $d['full_name'], 'phone' => $d['phone'], 'status' => $d['status']]);
+            \Config\Database::connect()->query(
+                'UPDATE brokers SET commission_pct=? WHERE admin_id=?',
+                [(float)($d['commission_pct'] ?? 0), $id]
+            );
             return redirect()->to('/admin/subadmin/brokers')->with('success', 'Broker updated.');
         }
         return view('admin/subadmin/broker_form', $this->viewData([
@@ -335,38 +549,5 @@ class SubAdminController extends BaseAdminController
     {
         $this->adminModel->update($id, ['status' => 'inactive']);
         return redirect()->to('/admin/subadmin/brokers')->with('success', 'Broker deactivated.');
-    }
-
-    // ── Assign Hotel Manager ──────────────────────────────────────────────────
-    public function assignManager(int $hotelId)
-    {
-        $db     = \Config\Database::connect();
-        $hotel  = $db->query('SELECT id,name FROM hotels WHERE id=? AND city=?', [$hotelId,$this->city])->getRowArray();
-        if (!$hotel) return redirect()->back()->with('error', 'Hotel not found.');
-
-        if ($this->request->getMethod() === 'POST') {
-            $d = $this->request->getPost();
-            if (empty($d['full_name']) || empty($d['email']) || empty($d['password'])) {
-                return redirect()->back()->withInput()->with('error', 'All fields are required.');
-            }
-            $d['role'] = 'hotel_manager';
-            $newId = $this->adminModel->createAdmin($d, $this->adminId);
-            if ($newId) {
-                $brokerId = !empty($d['broker_id']) ? (int)$d['broker_id'] : null;
-                $this->managerModel->assignManager($newId, $hotelId, $brokerId, $this->adminId);
-                if ($brokerId) {
-                    $brokerRow = $db->query('SELECT id FROM brokers WHERE admin_id=?', [$brokerId])->getRowArray();
-                    if ($brokerRow) $this->brokerModel->linkHotel($brokerRow['id'], $hotelId);
-                }
-            }
-            return redirect()->to('/admin/subadmin/hotels')->with('success', 'Hotel manager assigned.');
-        }
-
-        $brokers = $this->brokerModel->getBySubAdmin($this->adminId);
-        return view('admin/subadmin/assign_manager', $this->viewData([
-            'pageTitle' => "Assign Manager — {$hotel['name']}",
-            'hotel'     => $hotel,
-            'brokers'   => $brokers,
-        ]));
     }
 }

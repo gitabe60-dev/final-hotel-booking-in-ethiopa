@@ -16,29 +16,48 @@
           <?php if(!$isEdit): ?>
           <div class="col-12">
             <label class="form-label">Full Name *</label>
-            <input type="text" name="full_name" class="form-control" placeholder="Broker full name" value="<?= old('full_name') ?>" required>
+            <input type="text" name="full_name" class="form-control" placeholder="Broker full name"
+                   value="<?= old('full_name') ?>" required data-rule="name" data-label="Full name">
           </div>
           <div class="col-md-6">
             <label class="form-label">Email *</label>
-            <input type="email" name="email" class="form-control" placeholder="broker@example.com" value="<?= old('email') ?>" required>
+            <input type="email" name="email" class="form-control" placeholder="broker@example.com"
+                   value="<?= old('email') ?>" required data-label="Email">
           </div>
           <div class="col-md-6">
             <label class="form-label">Password *</label>
-            <input type="password" name="password" class="form-control" placeholder="Min 6 chars" required minlength="6">
+            <div class="input-group">
+              <input type="password" name="password" id="brkPass" class="form-control"
+                     placeholder="Min 6 chars" required minlength="6" data-label="Password">
+              <button type="button" class="input-group-text bg-white"
+                      onclick="const i=document.getElementById('brkPass');const ic=this.querySelector('i');i.type=i.type==='password'?'text':'password';ic.className=i.type==='text'?'bi bi-eye-slash':'bi bi-eye'">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
           <?php else: ?>
           <div class="col-12">
             <label class="form-label">Full Name *</label>
-            <input type="text" name="full_name" class="form-control" value="<?= esc($broker['broker_name']??'') ?>" required>
+            <input type="text" name="full_name" class="form-control"
+                   value="<?= esc($broker['broker_name']??'') ?>" required
+                   data-rule="name" data-label="Full name">
           </div>
           <?php endif; ?>
           <div class="col-md-6">
             <label class="form-label">Phone</label>
-            <input type="tel" name="phone" class="form-control" placeholder="+251..." value="<?= esc($broker['broker_phone']??old('phone')??'') ?>">
+            <div class="input-group">
+              <span class="input-group-text bg-white fw-700">+251</span>
+              <input type="tel" name="phone" class="form-control" placeholder="9xxxxxxxxx"
+                     value="<?= esc($broker['broker_phone']??old('phone')??'') ?>"
+                     data-label="Phone" maxlength="10"
+                     oninput="this.value=this.value.replace(/\D/g,'').substring(0,10)">
+            </div>
           </div>
           <div class="col-md-6">
             <label class="form-label">Commission %</label>
-            <input type="number" name="commission_pct" class="form-control" placeholder="5" value="<?= esc($broker['commission_pct']??0) ?>" min="0" max="100" step="0.01">
+            <input type="number" name="commission_pct" class="form-control" placeholder="5"
+                   value="<?= esc($broker['commission_pct']??0) ?>" min="0" max="100" step="0.01"
+                   data-label="Commission">
           </div>
           <?php if($isEdit): ?>
           <div class="col-12">

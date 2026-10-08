@@ -74,6 +74,7 @@
                 <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
                 <input type="text" name="card_name" id="cardName" class="form-control"
                        placeholder="e.g. ABEBE KEBEDE" style="text-transform:uppercase" required
+                       data-rule="name" data-label="Cardholder name"
                        oninput="document.getElementById('previewName').textContent=this.value.toUpperCase()||'YOUR NAME'">
               </div>
             </div>
@@ -84,6 +85,7 @@
                 <span class="input-group-text bg-white"><i class="bi bi-credit-card text-muted"></i></span>
                 <input type="text" name="card_number" id="cardNumber" class="form-control"
                        placeholder="1234 5678 9012 3456" maxlength="19" required
+                       data-label="Card number" minlength="19"
                        oninput="formatCard(this)"
                        onkeypress="return /[\d ]/.test(event.key)">
                 <span class="input-group-text bg-white" id="cardBrand" style="font-size:1.3rem">💳</span>
@@ -105,6 +107,7 @@
                   <span class="input-group-text bg-white"><i class="bi bi-calendar3 text-muted"></i></span>
                   <input type="text" name="expiry" id="expiry" class="form-control"
                          placeholder="MM/YY" maxlength="5" required
+                         data-label="Expiry date" minlength="5"
                          oninput="formatExpiry(this)"
                          onkeypress="return /[\d/]/.test(event.key)">
                 </div>

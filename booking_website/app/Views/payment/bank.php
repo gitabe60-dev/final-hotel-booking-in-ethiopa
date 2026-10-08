@@ -56,6 +56,7 @@
                 <span class="input-group-text bg-white fw-700" style="font-size:1rem">+251</span>
                 <input type="tel" name="phone" id="phoneInput" class="form-control"
                        placeholder="9xxxxxxxxx" maxlength="10" required
+                       data-label="Phone number" minlength="9"
                        oninput="this.value=this.value.replace(/\D/g,'').substring(0,10)">
               </div>
               <div class="form-text text-success fw-600">
@@ -161,6 +162,7 @@
                 <span class="input-group-text bg-white"><i class="bi bi-bank text-muted"></i></span>
                 <input type="text" name="account_number" id="acctInput" class="form-control"
                        placeholder="e.g. 1000123456789" maxlength="16" required
+                       data-label="Account number" minlength="10"
                        oninput="this.value=this.value.replace(/\D/g,'');document.getElementById('previewAcct').textContent=this.value.substring(0,4)+' '+this.value.substring(4,8)+' '+this.value.substring(8)||'•••• •••• ••••'">
               </div>
               <div class="form-text text-success fw-600">Test: enter any account number e.g. 1000123456789</div>
@@ -172,6 +174,7 @@
                 <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
                 <input type="text" name="card_name" id="holderInput" class="form-control"
                        placeholder="As registered at bank" required
+                       data-rule="name" data-label="Account holder name"
                        oninput="document.getElementById('previewHolder').textContent=this.value||'YOUR NAME'">
               </div>
             </div>

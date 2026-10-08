@@ -29,23 +29,35 @@ class HotelWebController extends Controller
     {
         $get = $this->request->getGet();
 
+        $page   = max(1, (int)($get['page'] ?? 1));
+        $limit  = 12;
+
         $params = [
-            'city'       => $get['city']       ?? '',
-            'hotel_name' => $get['hotel_name'] ?? '',
+            'city'       => trim($get['city']       ?? ''),
+            'hotel_name' => trim($get['hotel_name'] ?? ''),
             'check_in'   => $get['check_in']   ?? date('Y-m-d'),
             'check_out'  => $get['check_out']  ?? date('Y-m-d', strtotime('+1 day')),
-            'adults'     => $get['adults']     ?? 2,
-            'children'   => $get['children']   ?? 0,
-            'rooms'      => $get['rooms']      ?? 1,
+            'adults'     => max(1, (int)($get['adults']   ?? 2)),
+            'children'   => max(0, (int)($get['children'] ?? 0)),
+            'rooms'      => max(1, (int)($get['rooms']    ?? 1)),
             'min_price'  => $get['min_price']  ?? null,
             'max_price'  => $get['max_price']  ?? null,
             'min_rating' => $get['min_rating'] ?? null,
             'type'       => $get['type']       ?? null,
             'sort'       => $get['sort']       ?? 'rating',
-            'limit'      => 12,
-            'offset'     => (int)($get['page'] ?? 1) > 1 ? ((int)($get['page'] ?? 1) - 1) * 12 : 0,
+            'limit'      => $limit,
+            'offset'     => ($page - 1) * $limit,
         ];
 
+        // Validate dates
+        if ($params['check_in'] < date('Y-m-d')) {
+            $params['check_in'] = date('Y-m-d');
+        }
+        if ($params['check_out'] <= $params['check_in']) {
+            $params['check_out'] = date('Y-m-d', strtotime($params['check_in'] . ' +1 day'));
+        }
+
+        $total     = $this->hotelModel->countSearch($params);
         $hotels    = $this->hotelModel->search($params);
         $userId    = session()->get('user_id');
         $wishlisted = $userId ? $this->wishlistModel->getWishlistedIds($userId) : [];
@@ -63,10 +75,17 @@ class HotelWebController extends Controller
         // Best value hotels for sidebar
         $bestValue = $this->expertModel->getBestValue($params['city'] ?? '', 3);
 
+        $pageTitle = !empty($params['city'])
+            ? "Hotels in {$params['city']} ({$total} found)"
+            : "All Hotels in Ethiopia ({$total} found)";
+
         return view('hotels/list', [
             'hotels'          => $hotels,
             'params'          => $params,
-            'pageTitle'       => !empty($params['city']) ? 'Hotels in '.$params['city'] : 'All Hotels in Ethiopia',
+            'total'           => $total,
+            'page'            => $page,
+            'totalPages'      => max(1, (int)ceil($total / $limit)),
+            'pageTitle'       => $pageTitle,
             'cities'          => $this->getCities(),
             'hotelTypes'      => ['All','Hotel','Resort','Lodge','Guest House','Boutique'],
             'priceSuggestion' => $priceSuggestion,
@@ -78,12 +97,19 @@ class HotelWebController extends Controller
 
     public function detail(int $id)
     {
+        $today    = date('Y-m-d');
+        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+
         // Dates MUST come first — needed for room availability check
-        $checkIn  = $this->request->getGet('check_in')  ?? date('Y-m-d');
-        $checkOut = $this->request->getGet('check_out') ?? date('Y-m-d', strtotime('+1 day'));
+        $checkIn  = $this->request->getGet('check_in')  ?? $today;
+        $checkOut = $this->request->getGet('check_out') ?? $tomorrow;
         $adults   = max(1, (int)($this->request->getGet('adults')   ?? 2));
         $children = max(0, (int)($this->request->getGet('children') ?? 0));
         $rooms    = max(1, (int)($this->request->getGet('rooms')    ?? 1));
+
+        // Sanitize dates
+        if ($checkIn < $today)             $checkIn  = $today;
+        if ($checkOut <= $checkIn)         $checkOut = date('Y-m-d', strtotime($checkIn . ' +1 day'));
 
         $hotel = $this->hotelModel->getDetail($id, $checkIn, $checkOut);
         if (!$hotel) {
@@ -109,22 +135,27 @@ class HotelWebController extends Controller
         ]);
     }
 
-        // ─── Helper ──────────────────────────────────────────────────────────────
+    // ─── Helper: cities for dropdowns ────────────────────────────────────────
 
     private function getCities(): array
     {
-        // Dynamic: pull from cities table
         $cityModel = new \App\Models\CityModel();
-        $rows = $cityModel->getActive();
-        $names = array_column($rows, 'name');
-        // Ensure any hotel cities not in cities table are included
-        $dbCities = \Config\Database::connect()->query(
-            "SELECT DISTINCT city FROM hotels WHERE is_active=TRUE AND city IS NOT NULL ORDER BY city"
+        // Get all active cities with hotel counts
+        $rows = $cityModel->getAll();
+
+        // Also union any hotels whose city isn't in cities table yet
+        $knownNames = array_map('strtolower', array_column($rows, 'name'));
+        $dbCities   = \Config\Database::connect()->query(
+            "SELECT DISTINCT city AS name FROM hotels WHERE is_active=TRUE AND city IS NOT NULL ORDER BY city"
         )->getResultArray();
-        foreach (array_column($dbCities, 'city') as $c) {
-            if (!in_array($c, $names)) $names[] = $c;
+
+        foreach ($dbCities as $c) {
+            if (!in_array(strtolower($c['name']), $knownNames)) {
+                $rows[] = ['id' => 0, 'name' => $c['name'], 'region' => '', 'hotel_count' => 1];
+            }
         }
-        sort($names);
-        return $names;
+
+        usort($rows, fn($a,$b) => strcmp($a['name'], $b['name']));
+        return $rows;
     }
 }

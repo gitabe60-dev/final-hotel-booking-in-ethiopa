@@ -54,12 +54,14 @@
               <div class="col-6">
                 <label class="form-label small fw-700">First Name *</label>
                 <input type="text" name="first_name" class="form-control" placeholder="Abebe"
-                       value="<?= old('first_name') ?>" required autofocus>
+                       value="<?= old('first_name') ?>" required autofocus
+                       data-rule="name" data-label="First name" autocomplete="given-name">
               </div>
               <div class="col-6">
                 <label class="form-label small fw-700">Last Name *</label>
                 <input type="text" name="last_name" class="form-control" placeholder="Kebede"
-                       value="<?= old('last_name') ?>" required>
+                       value="<?= old('last_name') ?>" required
+                       data-rule="name" data-label="Last name" autocomplete="family-name">
               </div>
             </div>
             <div class="mb-3">
@@ -67,7 +69,7 @@
               <div class="input-icon-wrap">
                 <i class="bi bi-envelope input-icon"></i>
                 <input type="email" name="email" class="form-control" placeholder="you@email.com"
-                       value="<?= old('email') ?>" required>
+                       value="<?= old('email') ?>" required autocomplete="email">
               </div>
             </div>
             <div class="mb-3">
@@ -75,15 +77,19 @@
               <div class="input-group">
                 <span class="input-group-text bg-white fw-700">+251</span>
                 <input type="tel" name="phone" class="form-control" placeholder="9xxxxxxxxx"
-                       value="<?= old('phone') ?>">
+                       value="<?= old('phone') ?>"
+                       data-label="Phone" maxlength="10" pattern="[0-9]{9,10}"
+                       oninput="this.value=this.value.replace(/\D/g,'').substring(0,10)">
               </div>
+              <div class="form-text">Ethiopian number: 9xxxxxxxx</div>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-700">Password *</label>
               <div class="input-group">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-lock text-muted"></i></span>
                 <input type="password" name="password" id="pw1" class="form-control border-start-0"
-                       placeholder="Min. 6 characters" required minlength="6">
+                       placeholder="Min. 6 characters" required minlength="6"
+                       data-label="Password" autocomplete="new-password">
                 <button type="button" class="input-group-text bg-white" onclick="togglePw('pw1',this)">
                   <i class="bi bi-eye text-muted"></i>
                 </button>
@@ -94,7 +100,8 @@
               <div class="input-group">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-lock-fill text-muted"></i></span>
                 <input type="password" name="confirm_password" id="pw2" class="form-control border-start-0"
-                       placeholder="Repeat password" required>
+                       placeholder="Repeat password" required
+                       data-label="Confirm password" data-ref="password" autocomplete="new-password">
                 <button type="button" class="input-group-text bg-white" onclick="togglePw('pw2',this)">
                   <i class="bi bi-eye text-muted"></i>
                 </button>
@@ -131,6 +138,7 @@
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/js/dallol-validate.js"></script>
 <script>
 function togglePw(id,btn){
   const inp=document.getElementById(id);

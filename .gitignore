@@ -1,4 +1,4 @@
-# ── CodeIgniter 4 ──────────────────────────────────────────────────────────
+# ── CodeIgniter 4 (booking website) ──────────────────────────────────────────
 booking_website/vendor/
 booking_website/.env
 booking_website/writable/logs/*
@@ -10,20 +10,33 @@ booking_website/writable/uploads/*
 !booking_website/writable/cache/.gitkeep
 !booking_website/writable/session/.gitkeep
 
-# ── Flutter mobile app (already in separate repo) ───────────────────────────
+# ── CodeIgniter 4 (ERP) ───────────────────────────────────────────────────────
+erp/vendor/
+erp/.env
+erp/writable/logs/*
+erp/writable/cache/*
+erp/writable/session/*
+erp/writable/debugbar/*
+erp/writable/uploads/*
+!erp/writable/logs/.gitkeep
+!erp/writable/cache/.gitkeep
+!erp/writable/session/.gitkeep
+
+# ── Flutter mobile app ────────────────────────────────────────────────────────
 booking_mobilapp/.dart_tool/
 booking_mobilapp/build/
 booking_mobilapp/.packages
 booking_mobilapp/.flutter-plugins
 booking_mobilapp/.flutter-plugins-dependencies
 booking_mobilapp/ios/Pods/
+booking_mobilapp/ios/.symlinks/
 booking_mobilapp/android/.gradle/
 booking_mobilapp/android/local.properties
 booking_mobilapp/android/app/debug/
 booking_mobilapp/android/app/profile/
 booking_mobilapp/android/app/release/
 
-# ── IDE & OS ────────────────────────────────────────────────────────────────
+# ── IDE & OS ──────────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
@@ -31,5 +44,9 @@ booking_mobilapp/android/app/release/
 .DS_Store
 Thumbs.db
 
-# ── Lock files ───────────────────────────────────────────────────────────────
-booking_website/composer.lock
+# ── Node / misc ───────────────────────────────────────────────────────────────
+node_modules/
+*.log
+
+# ── Database / secrets ────────────────────────────────────────────────────────
+*.sql.bak

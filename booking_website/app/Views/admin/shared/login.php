@@ -97,5 +97,6 @@ function togglePw(){
   else{pw.type='password';ic.className='bi bi-eye text-muted';}
 }
 </script>
+<script src="/assets/js/dallol-validate.js"></script>
 </body>
 </html>

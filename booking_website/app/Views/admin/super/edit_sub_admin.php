@@ -14,15 +14,24 @@
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label">Full Name *</label>
-            <input type="text" name="full_name" class="form-control" value="<?= esc($admin['full_name']) ?>" required>
+            <input type="text" name="full_name" class="form-control"
+                   value="<?= esc($admin['full_name']) ?>" required
+                   data-rule="name" data-label="Full name">
           </div>
           <div class="col-md-6">
             <label class="form-label">Email *</label>
-            <input type="email" name="email" class="form-control" value="<?= esc($admin['email']) ?>" required>
+            <input type="email" name="email" class="form-control"
+                   value="<?= esc($admin['email']) ?>" required data-label="Email">
           </div>
           <div class="col-md-6">
             <label class="form-label">Phone</label>
-            <input type="tel" name="phone" class="form-control" value="<?= esc($admin['phone']??'') ?>">
+            <div class="input-group">
+              <span class="input-group-text bg-white fw-700">+251</span>
+              <input type="tel" name="phone" class="form-control"
+                     value="<?= esc(ltrim($admin['phone']??'','+251')) ?>"
+                     data-label="Phone" maxlength="10"
+                     oninput="this.value=this.value.replace(/\D/g,'').substring(0,10)">
+            </div>
           </div>
           <div class="col-md-6">
             <label class="form-label">City Assignment</label>

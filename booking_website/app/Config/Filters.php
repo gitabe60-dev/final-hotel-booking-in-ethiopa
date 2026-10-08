@@ -36,7 +36,7 @@ class Filters extends BaseFilters
 
     public array $required = [
         'before' => [
-            'forcehttps',
+            // 'forcehttps',   // disabled for local development
             'pagecache',
         ],
         'after' => [
@@ -48,11 +48,13 @@ class Filters extends BaseFilters
 
     public array $globals = [
         'before' => [
+            'cors',          // ← must be FIRST so OPTIONS preflight always gets headers
             // 'honeypot',
             // 'csrf',
             // 'invalidchars',
         ],
         'after' => [
+            'cors',
             // 'honeypot',
             // 'secureheaders',
         ],
@@ -60,5 +62,10 @@ class Filters extends BaseFilters
 
     public array $methods = [];
 
-    public array $filters = [];
+    public array $filters = [
+        'cors' => [
+            'before' => ['api/*', 'api/v1/*'],
+            'after'  => ['api/*', 'api/v1/*'],
+        ],
+    ];
 }

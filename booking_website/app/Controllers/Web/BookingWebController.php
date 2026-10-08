@@ -65,6 +65,50 @@ class BookingWebController extends Controller
         $allowedMethods = ['card','bank_transfer','mobile_money','cash','telebirr','cbe_birr'];
         if (!in_array($method, $allowedMethods)) $method = 'telebirr';
 
+        // ── Room-type availability check (prevents double-booking) ────────────
+        if ($roomTypeId) {
+            $conflict = \Config\Database::connect()->query(
+                "SELECT COUNT(*) AS cnt FROM bookings
+                 WHERE room_type_id = ?
+                   AND status IN ('pending','confirmed')
+                   AND check_in  < ?
+                   AND check_out > ?",
+                [$roomTypeId, $checkOut, $checkIn]
+            )->getRowArray();
+
+            if ((int)($conflict['cnt'] ?? 0) > 0) {
+                // Find next free date for a helpful message
+                $nextFree = \Config\Database::connect()->query(
+                    "SELECT MAX(check_out) AS frees_at FROM bookings
+                     WHERE room_type_id = ?
+                       AND status IN ('pending','confirmed')
+                       AND check_out > NOW()",
+                    [$roomTypeId]
+                )->getRowArray();
+                $freeMsg = !empty($nextFree['frees_at'])
+                    ? ' Room is occupied until ' . date('d M Y', strtotime($nextFree['frees_at'])) . '.'
+                    : '';
+                return redirect()->back()->withInput()
+                    ->with('error', 'Sorry, this room is no longer available for your selected dates.' . $freeMsg . ' Please choose different dates or another room.');
+            }
+
+            // Also verify room still exists and is_available = TRUE
+            $roomCheck = \Config\Database::connect()->query(
+                'SELECT id FROM room_types WHERE id = ? AND hotel_id = ? AND is_available = TRUE LIMIT 1',
+                [$roomTypeId, $hotelId]
+            )->getRowArray();
+            if (!$roomCheck) {
+                return redirect()->back()->withInput()
+                    ->with('error', 'Selected room is not available. Please choose another room.');
+            }
+        } else {
+            // No specific room selected — check hotel-level availability
+            if (!$this->bookingModel->isAvailable($hotelId, $checkIn, $checkOut, $rooms)) {
+                return redirect()->back()->withInput()
+                    ->with('error', 'No rooms available at this hotel for your selected dates. Please try different dates.');
+            }
+        }
+
         // ── Calculate price ──────────────────────────────────────────────────
         $nights    = max(1, (strtotime($checkOut) - strtotime($checkIn)) / 86400);
         $unitPrice = (float)$hotel['price_per_night'];

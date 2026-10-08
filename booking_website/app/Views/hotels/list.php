@@ -14,7 +14,7 @@
       <?= !empty($params['city']) ? 'Hotels in '.esc($params['city']) : 'All Hotels in Ethiopia' ?>
     </h1>
     <p class="text-white-50 mb-0">
-      <?= count($hotels) ?> propert<?= count($hotels)===1?'y':'ies' ?> found
+      <?= ($total ?? count($hotels)) ?> hotel<?= ($total ?? count($hotels)) !== 1 ? 's' : '' ?> found
       <?= !empty($params['check_in'])?' · '.date('d M',strtotime($params['check_in'])).' – '.date('d M Y',strtotime($params['check_out'])):'' ?>
     </p>
   </div>
@@ -30,17 +30,26 @@
             <i class="bi bi-geo-alt-fill input-icon text-primary"></i>
             <select name="city" class="form-select">
               <option value="">All Cities</option>
-              <?php foreach($cities as $c): ?>
-              <option value="<?= esc($c) ?>" <?= ($params['city']??'')===$c?'selected':'' ?>><?= esc($c) ?></option>
+              <?php foreach($cities as $c):
+                $cName   = is_array($c) ? ($c['name']   ?? $c) : $c;
+                $cRegion = is_array($c) ? ($c['region'] ?? '')  : '';
+                $cCount  = is_array($c) ? (int)($c['hotel_count'] ?? 0) : 0;
+                $selected = ($params['city'] ?? '') === $cName ? 'selected' : '';
+              ?>
+              <option value="<?= esc($cName) ?>" <?= $selected ?>>
+                <?= esc($cName) ?><?= $cRegion ? ' — '.esc($cRegion) : '' ?><?= $cCount > 0 ? " ({$cCount})" : '' ?>
+              </option>
               <?php endforeach; ?>
             </select>
           </div>
         </div>
         <div class="col-md-2">
-          <input type="date" name="check_in" class="form-control" value="<?= esc($params['check_in']) ?>">
+          <input type="date" name="check_in" id="listCheckIn" class="form-control"
+                 min="<?= date('Y-m-d') ?>" value="<?= esc($params['check_in']) ?>">
         </div>
         <div class="col-md-2">
-          <input type="date" name="check_out" class="form-control" value="<?= esc($params['check_out']) ?>">
+          <input type="date" name="check_out" id="listCheckOut" class="form-control"
+                 min="<?= date('Y-m-d', strtotime('+1 day')) ?>" value="<?= esc($params['check_out']) ?>">
         </div>
         <div class="col-md-2">
           <select name="adults" class="form-select">
@@ -237,5 +246,30 @@
     </div>
   </div>
 </div>
+
+<?= $this->section('scripts') ?>
+<script>
+// ── Date enforcement on search list form ─────────────────────────────────
+(function() {
+  const ci = document.getElementById('listCheckIn');
+  const co = document.getElementById('listCheckOut');
+  if (!ci || !co) return;
+  const today = new Date().toISOString().split('T')[0];
+  ci.min = today;
+  if (ci.value < today) ci.value = today;
+  function updateCoMin() {
+    const next = new Date(new Date(ci.value).getTime()+86400000).toISOString().split('T')[0];
+    co.min = next;
+    if (co.value <= ci.value) co.value = next;
+  }
+  updateCoMin();
+  ci.addEventListener('change', updateCoMin);
+  co.addEventListener('change', function() {
+    if (co.value <= ci.value)
+      co.value = new Date(new Date(ci.value).getTime()+86400000).toISOString().split('T')[0];
+  });
+})();
+</script>
+<?= $this->endSection() ?>
 
 <?= $this->endSection() ?>

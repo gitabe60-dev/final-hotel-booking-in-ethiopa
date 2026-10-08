@@ -44,8 +44,9 @@ class HotelModel extends Model
         $binds      = [];
 
         if (!empty($params['city'])) {
-            $conditions[] = 'h.city ILIKE :city:';
-            $binds['city'] = '%' . $params['city'] . '%';
+            // Exact case-insensitive match so "Debre Markos" only returns Debre Markos hotels
+            $conditions[] = 'LOWER(h.city) = LOWER(:city:)';
+            $binds['city'] = trim($params['city']);
         }
         if (!empty($params['hotel_name'])) {
             $conditions[] = 'h.name ILIKE :hotel_name:';
@@ -88,6 +89,45 @@ class HotelModel extends Model
 
         $results = $this->db->query($sql, $binds)->getResultArray();
         return $this->attachDetails($results);
+    }
+
+    // ─── Count hotels matching search params ─────────────────────────────────
+
+    public function countSearch(array $params): int
+    {
+        $conditions = ['h.is_active = TRUE'];
+        $binds      = [];
+
+        if (!empty($params['city'])) {
+            $conditions[] = 'LOWER(h.city) = LOWER(:city:)';
+            $binds['city'] = trim($params['city']);
+        }
+        if (!empty($params['hotel_name'])) {
+            $conditions[] = 'h.name ILIKE :hotel_name:';
+            $binds['hotel_name'] = '%' . $params['hotel_name'] . '%';
+        }
+        if (!empty($params['min_price'])) {
+            $conditions[] = 'h.price_per_night >= :min_price:';
+            $binds['min_price'] = (float)$params['min_price'];
+        }
+        if (!empty($params['max_price'])) {
+            $conditions[] = 'h.price_per_night <= :max_price:';
+            $binds['max_price'] = (float)$params['max_price'];
+        }
+        if (!empty($params['min_rating'])) {
+            $conditions[] = 'h.rating >= :min_rating:';
+            $binds['min_rating'] = (float)$params['min_rating'];
+        }
+        if (!empty($params['type']) && $params['type'] !== 'All') {
+            $conditions[] = 'h.type = :type:';
+            $binds['type'] = $params['type'];
+        }
+
+        $where = implode(' AND ', $conditions);
+        $row   = $this->db->query(
+            "SELECT COUNT(*) AS cnt FROM hotels h WHERE {$where}", $binds
+        )->getRowArray();
+        return (int)($row['cnt'] ?? 0);
     }
 
     // ─── Featured hotels ─────────────────────────────────────────────────────
@@ -174,6 +214,7 @@ class HotelModel extends Model
 
             // Check if booked for the requested dates
             if ($row['is_available'] && $checkIn && $checkOut) {
+                // Count active overlapping bookings for this room type
                 $booked = $this->db->query(
                     "SELECT COUNT(*) AS cnt FROM bookings
                      WHERE room_type_id = ?
@@ -183,9 +224,21 @@ class HotelModel extends Model
                     [$row['id'], $checkOut, $checkIn]
                 )->getRowArray();
 
+                // A room type represents one physical room — any active booking blocks it
                 if ((int)($booked['cnt'] ?? 0) > 0) {
-                    $row['is_available']     = false;
+                    $row['is_available']       = false;
                     $row['unavailable_reason'] = 'Occupied for selected dates';
+                    // Tell the guest when it frees up
+                    $nextFree = $this->db->query(
+                        "SELECT MAX(check_out) AS frees_at FROM bookings
+                         WHERE room_type_id = ?
+                           AND status IN ('pending','confirmed')
+                           AND check_out > NOW()",
+                        [$row['id']]
+                    )->getRowArray();
+                    if (!empty($nextFree['frees_at'])) {
+                        $row['frees_at'] = $nextFree['frees_at'];
+                    }
                 }
             }
         }

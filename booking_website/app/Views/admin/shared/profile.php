@@ -18,15 +18,24 @@
         <div class="row g-3">
           <div class="col-12">
             <label class="form-label">Full Name</label>
-            <input type="text" name="full_name" class="form-control" value="<?= esc($admin['full_name']??'') ?>" required>
+            <input type="text" name="full_name" class="form-control"
+                   value="<?= esc($admin['full_name']??'') ?>" required
+                   data-rule="name" data-label="Full name">
           </div>
           <div class="col-md-6">
             <label class="form-label">Email <span class="text-muted fw-400">(read-only)</span></label>
-            <input type="email" class="form-control" style="background:#f8fafc" value="<?= esc($admin['email']??'') ?>" disabled>
+            <input type="email" class="form-control" style="background:#f8fafc"
+                   value="<?= esc($admin['email']??'') ?>" disabled>
           </div>
           <div class="col-md-6">
             <label class="form-label">Phone</label>
-            <input type="tel" name="phone" class="form-control" value="<?= esc($admin['phone']??'') ?>">
+            <div class="input-group">
+              <span class="input-group-text bg-white fw-700">+251</span>
+              <input type="tel" name="phone" class="form-control"
+                     value="<?= esc(ltrim($admin['phone']??'','+251')) ?>"
+                     data-label="Phone" maxlength="10"
+                     oninput="this.value=this.value.replace(/\D/g,'').substring(0,10)">
+            </div>
           </div>
           <div class="col-12 d-flex gap-3">
             <button type="submit" class="btn btn-primary rounded-3 fw-700 px-4"><i class="bi bi-check-circle me-2"></i>Save</button>

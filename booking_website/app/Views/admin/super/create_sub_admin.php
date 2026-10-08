@@ -20,23 +20,29 @@
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label">Full Name *</label>
-            <input type="text" name="full_name" class="form-control" placeholder="Kebede Alemu" value="<?= old('full_name') ?>" required>
+            <input type="text" name="full_name" class="form-control" placeholder="Kebede Alemu"
+                   value="<?= old('full_name') ?>" required
+                   data-rule="name" data-label="Full name">
           </div>
           <div class="col-md-6">
             <label class="form-label">Email Address *</label>
-            <input type="email" name="email" class="form-control" placeholder="kebede@example.com" value="<?= old('email') ?>" required>
+            <input type="email" name="email" class="form-control" placeholder="kebede@example.com"
+                   value="<?= old('email') ?>" required data-label="Email">
           </div>
           <div class="col-md-6">
             <label class="form-label">Phone Number</label>
             <div class="input-group">
               <span class="input-group-text">+251</span>
-              <input type="tel" name="phone" class="form-control" placeholder="9xxxxxxxxx" value="<?= old('phone') ?>">
+              <input type="tel" name="phone" class="form-control" placeholder="9xxxxxxxxx"
+                     value="<?= old('phone') ?>" data-label="Phone" maxlength="10"
+                     oninput="this.value=this.value.replace(/\D/g,'').substring(0,10)">
             </div>
           </div>
           <div class="col-md-6">
             <label class="form-label">Assign City</label>
             <input type="text" name="city" list="et-cities-create" class="form-control"
-                   placeholder="Type any Ethiopian city..." value="<?= old('city') ?>">
+                   placeholder="Type any Ethiopian city..." value="<?= old('city') ?>"
+                   data-label="City">
             <datalist id="et-cities-create">
               <?php foreach(['Addis Ababa','Dire Dawa','Mekelle','Gondar','Hawassa','Bahir Dar',
                 'Dessie','Jimma','Jijiga','Shashamane','Bishoftu','Sodo','Arba Minch',
@@ -50,11 +56,26 @@
           </div>
           <div class="col-md-6">
             <label class="form-label">Password *</label>
-            <input type="password" name="password" class="form-control" placeholder="Min. 6 characters" required minlength="6">
+            <div class="input-group">
+              <input type="password" name="password" id="saPass" class="form-control"
+                     placeholder="Min. 6 characters" required minlength="6" data-label="Password">
+              <button type="button" class="input-group-text bg-white"
+                      onclick="const i=document.getElementById('saPass');const ic=this.querySelector('i');i.type=i.type==='password'?'text':'password';ic.className=i.type==='text'?'bi bi-eye-slash':'bi bi-eye'">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
           <div class="col-md-6">
             <label class="form-label">Confirm Password *</label>
-            <input type="password" name="password_confirm" class="form-control" placeholder="Repeat password" required>
+            <div class="input-group">
+              <input type="password" name="password_confirm" id="saPassC" class="form-control"
+                     placeholder="Repeat password" required
+                     data-label="Confirm password" data-ref="password">
+              <button type="button" class="input-group-text bg-white"
+                      onclick="const i=document.getElementById('saPassC');const ic=this.querySelector('i');i.type=i.type==='password'?'text':'password';ic.className=i.type==='text'?'bi bi-eye-slash':'bi bi-eye'">
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
           </div>
           <div class="col-12">
             <div class="alert alert-info rounded-3 small py-2">

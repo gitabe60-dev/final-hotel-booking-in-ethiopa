@@ -292,8 +292,8 @@ class SuperAdminController extends BaseAdminController
                     trim($d['description'] ?? ''),
                     $d['type'] ?? 'Hotel',
                     (float)($d['price_per_night']),
-                    (float)($d['latitude']  ?? 0),
-                    (float)($d['longitude'] ?? 0),
+                    max(-90.0,  min(90.0,  $d['latitude']  !== '' ? (float)$d['latitude']  : 0.0)),
+                    max(-180.0, min(180.0, $d['longitude'] !== '' ? (float)$d['longitude'] : 0.0)),
                     isset($d['is_featured']) ? 'TRUE' : 'FALSE',
                 ]
             )->getRowArray();
@@ -351,7 +351,8 @@ class SuperAdminController extends BaseAdminController
                 [
                     $d['name'], $d['city'], $d['address']??'', $d['description']??'',
                     $d['type']??'Hotel', (float)($d['price_per_night']??0),
-                    (float)($d['latitude']??0), (float)($d['longitude']??0),
+                    max(-90.0,  min(90.0,  $d['latitude']  !== '' ? (float)$d['latitude']  : 0.0)),
+                    max(-180.0, min(180.0, $d['longitude'] !== '' ? (float)$d['longitude'] : 0.0)),
                     isset($d['is_featured']) ? 'TRUE' : 'FALSE', $id,
                 ]
             );

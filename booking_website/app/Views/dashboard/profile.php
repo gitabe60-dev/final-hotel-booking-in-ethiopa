@@ -41,26 +41,37 @@
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label small fw-700">First Name *</label>
-              <input type="text" name="first_name" class="form-control" value="<?= esc($user['first_name']) ?>" required>
+              <input type="text" name="first_name" class="form-control"
+                     value="<?= esc($user['first_name']) ?>" required
+                     data-rule="name" data-label="First name">
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-700">Last Name *</label>
-              <input type="text" name="last_name" class="form-control" value="<?= esc($user['last_name']) ?>" required>
+              <input type="text" name="last_name" class="form-control"
+                     value="<?= esc($user['last_name']) ?>" required
+                     data-rule="name" data-label="Last name">
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-700">Email <span class="text-muted fw-400">(read-only)</span></label>
-              <input type="email" class="form-control" style="background:#f8fafc" value="<?= esc($user['email']??'') ?>" disabled>
+              <input type="email" class="form-control" style="background:#f8fafc"
+                     value="<?= esc($user['email']??'') ?>" disabled>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-700">Phone Number</label>
               <div class="input-group">
                 <span class="input-group-text bg-white fw-700">+251</span>
-                <input type="tel" name="phone" class="form-control" value="<?= esc(ltrim($user['phone']??'','+251')) ?>">
+                <input type="tel" name="phone" class="form-control"
+                       value="<?= esc(ltrim($user['phone']??'','+251')) ?>"
+                       data-label="Phone" maxlength="10"
+                       oninput="this.value=this.value.replace(/\D/g,'').substring(0,10)">
               </div>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-700">Nationality</label>
-              <input type="text" name="nationality" class="form-control" placeholder="e.g. Ethiopian" value="<?= esc($user['nationality']??'') ?>">
+              <input type="text" name="nationality" class="form-control"
+                     placeholder="e.g. Ethiopian"
+                     value="<?= esc($user['nationality']??'') ?>"
+                     data-rule="name" data-label="Nationality">
             </div>
             <div class="col-12 mt-2">
               <button type="submit" class="btn btn-primary rounded-3 fw-700 px-4 py-2">
