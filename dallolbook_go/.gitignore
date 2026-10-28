@@ -1,0 +1,31 @@
+# Backend
+backend/.env
+backend/tmp/
+backend/*.exe
+backend/*.test
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Go
+*.sum
+vendor/
+
+# Embedded repos / unrelated directories
+erp/
+oromiya-communction/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Logs
+*.log

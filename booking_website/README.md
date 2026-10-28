@@ -103,3 +103,4 @@ booking_website/
 - **Auth**: JWT (firebase/php-jwt) for API, Sessions for web
 - **Frontend**: Bootstrap 5.3, Bootstrap Icons, Google Fonts (Inter)
 - **Images**: Unsplash (online images, no local storage needed)
+# hotel-booking
