@@ -39,6 +39,7 @@ type RoomType struct {
 	MaxGuests     int      `json:"max_guests"`
 	Features      []string `json:"features"`
 	IsAvailable   bool     `json:"is_available"`
+	RoomStatus    string   `json:"room_status"`
 }
 
 type Review struct {
@@ -198,7 +199,7 @@ func (m *Model) GetAmenities(hotelID int) ([]string, error) {
 func (m *Model) GetRoomTypes(hotelID int) ([]RoomType, error) {
 	rows, err := m.db.Query(
 		`SELECT id,hotel_id,name,bed_type,image_url,price_per_night,
-		        size_sqm,max_guests,is_available
+		        size_sqm,max_guests,is_available,room_status
 		 FROM room_types WHERE hotel_id=$1 ORDER BY price_per_night ASC`, hotelID,
 	)
 	if err != nil {
@@ -209,7 +210,7 @@ func (m *Model) GetRoomTypes(hotelID int) ([]RoomType, error) {
 	for rows.Next() {
 		var r RoomType
 		rows.Scan(&r.ID, &r.HotelID, &r.Name, &r.BedType, &r.ImageURL,
-			&r.PricePerNight, &r.SizeSqm, &r.MaxGuests, &r.IsAvailable)
+			&r.PricePerNight, &r.SizeSqm, &r.MaxGuests, &r.IsAvailable, &r.RoomStatus)
 		rooms = append(rooms, r)
 	}
 	return rooms, nil
@@ -267,10 +268,10 @@ func (m *Model) HasReviewed(hotelID, userID int) bool {
 func (m *Model) GetAvailableRooms(hotelID int, checkIn, checkOut string) ([]RoomType, error) {
 	rows, err := m.db.Query(`
 		SELECT rt.id, rt.hotel_id, rt.name, rt.bed_type, rt.image_url,
-		       rt.price_per_night, rt.size_sqm, rt.max_guests, rt.is_available
+		       rt.price_per_night, rt.size_sqm, rt.max_guests, rt.is_available, rt.room_status
 		FROM room_types rt
 		WHERE rt.hotel_id = $1
-		  AND rt.is_available = true
+		  AND rt.room_status = 'available'
 		  AND rt.id NOT IN (
 		      SELECT DISTINCT b.room_type_id
 		      FROM bookings b
@@ -289,7 +290,7 @@ func (m *Model) GetAvailableRooms(hotelID int, checkIn, checkOut string) ([]Room
 	for rows.Next() {
 		var r RoomType
 		rows.Scan(&r.ID, &r.HotelID, &r.Name, &r.BedType, &r.ImageURL,
-			&r.PricePerNight, &r.SizeSqm, &r.MaxGuests, &r.IsAvailable)
+			&r.PricePerNight, &r.SizeSqm, &r.MaxGuests, &r.IsAvailable, &r.RoomStatus)
 		rooms = append(rooms, r)
 	}
 	return rooms, nil

@@ -41,6 +41,8 @@ type RoomType struct {
 	PricePerNight float64 `json:"price_per_night"`
 	MaxGuests     int     `json:"max_guests"`
 	IsAvailable   bool    `json:"is_available"`
+	RoomStatus    string  `json:"room_status"`
+	ImageURL      *string `json:"image_url"`
 }
 
 type Message struct {
@@ -258,7 +260,7 @@ func (m *Model) AddHotelImage(hotelID int, imageURL string, sortOrder int, isPri
 
 func (m *Model) GetRooms(hotelID int) ([]RoomType, error) {
 	rows, err := m.db.Query(`
-		SELECT id,hotel_id,name,bed_type,price_per_night,max_guests,is_available
+		SELECT id,hotel_id,name,bed_type,price_per_night,max_guests,is_available,room_status,image_url
 		FROM room_types WHERE hotel_id=$1 ORDER BY price_per_night`, hotelID)
 	if err != nil {
 		return nil, err
@@ -267,18 +269,21 @@ func (m *Model) GetRooms(hotelID int) ([]RoomType, error) {
 	var rooms []RoomType
 	for rows.Next() {
 		var r RoomType
-		rows.Scan(&r.ID, &r.HotelID, &r.Name, &r.BedType, &r.PricePerNight, &r.MaxGuests, &r.IsAvailable)
+		rows.Scan(&r.ID, &r.HotelID, &r.Name, &r.BedType, &r.PricePerNight, &r.MaxGuests, &r.IsAvailable, &r.RoomStatus, &r.ImageURL)
 		rooms = append(rooms, r)
 	}
 	return rooms, nil
 }
 
-func (m *Model) CreateRoom(hotelID int, name, bedType string, price float64, maxGuests int) (int, error) {
+func (m *Model) CreateRoom(hotelID int, name, bedType string, price float64, maxGuests int, imageURL, roomStatus string) (int, error) {
 	var id int
+	if roomStatus == "" {
+		roomStatus = "available"
+	}
 	err := m.db.QueryRow(`
-		INSERT INTO room_types (hotel_id,name,bed_type,price_per_night,max_guests,is_available)
-		VALUES ($1,$2,$3,$4,$5,true) RETURNING id`,
-		hotelID, name, bedType, price, maxGuests,
+		INSERT INTO room_types (hotel_id,name,bed_type,price_per_night,max_guests,is_available,room_status,image_url)
+		VALUES ($1,$2,$3,$4,$5,true,$6,$7) RETURNING id`,
+		hotelID, name, bedType, price, maxGuests, roomStatus, imageURL,
 	).Scan(&id)
 	return id, err
 }
@@ -297,6 +302,13 @@ func (m *Model) DeleteRoom(id int) error {
 
 func (m *Model) ToggleRoom(id int) error {
 	_, err := m.db.Exec(`UPDATE room_types SET is_available = NOT is_available WHERE id=$1`, id)
+	return err
+}
+
+// SetRoomStatus updates a room's status (available/maintenance/unavailable).
+func (m *Model) SetRoomStatus(id int, status string) error {
+	isAvail := status == "available"
+	_, err := m.db.Exec(`UPDATE room_types SET room_status=$1,is_available=$2 WHERE id=$3`, status, isAvail, id)
 	return err
 }
 

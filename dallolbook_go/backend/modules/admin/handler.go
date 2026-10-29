@@ -395,20 +395,18 @@ func (h *Handler) Rooms(c *gin.Context) {
 func (h *Handler) AddRoom(c *gin.Context) {
 	hotelID, _ := strconv.Atoi(c.Param("id"))
 	var body struct {
-		Name      string  `json:"name"`
-		BedType   string  `json:"bed_type"`
-		Price     float64 `json:"price_per_night"`
-		MaxGuests int     `json:"max_guests"`
-		ImageURL  string  `json:"image_url"`
+		Name       string  `json:"name"`
+		BedType    string  `json:"bed_type"`
+		Price      float64 `json:"price_per_night"`
+		MaxGuests  int     `json:"max_guests"`
+		ImageURL   string  `json:"image_url"`
+		RoomStatus string  `json:"room_status"`
 	}
 	c.ShouldBindJSON(&body)
-	id, err := h.model.CreateRoom(hotelID, body.Name, body.BedType, body.Price, body.MaxGuests)
+	id, err := h.model.CreateRoom(hotelID, body.Name, body.BedType, body.Price, body.MaxGuests, body.ImageURL, body.RoomStatus)
 	if err != nil {
 		utils.ServerError(c, "Failed to create room")
 		return
-	}
-	if body.ImageURL != "" {
-		h.model.UpdateRoomImage(id, body.ImageURL)
 	}
 	utils.Created(c, "Room created.", gin.H{"id": id})
 }
@@ -439,6 +437,23 @@ func (h *Handler) ToggleRoom(c *gin.Context) {
 	rid, _ := strconv.Atoi(c.Param("rid"))
 	h.model.ToggleRoom(rid)
 	utils.Success(c, "Room availability toggled.", nil)
+}
+
+// POST /api/admin/manager/rooms/:rid/status — set room status (available/maintenance/unavailable)
+func (h *Handler) SetRoomStatus(c *gin.Context) {
+	rid, _ := strconv.Atoi(c.Param("rid"))
+	var body struct{ Status string `json:"status"` }
+	c.ShouldBindJSON(&body)
+	allowed := map[string]bool{"available": true, "maintenance": true, "unavailable": true}
+	if !allowed[body.Status] {
+		utils.BadRequest(c, "Status must be: available, maintenance, or unavailable")
+		return
+	}
+	if err := h.model.SetRoomStatus(rid, body.Status); err != nil {
+		utils.ServerError(c, "Failed to update room status")
+		return
+	}
+	utils.Success(c, "Room status updated.", nil)
 }
 
 // GET /api/admin/subadmin/bookings

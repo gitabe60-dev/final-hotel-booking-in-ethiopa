@@ -93,6 +93,7 @@ func Register(rg *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 			manager.PUT("/rooms/:rid",             h.EditRoom)
 			manager.DELETE("/rooms/:rid",          h.DeleteRoom)
 			manager.POST("/rooms/:rid/toggle",     h.ToggleRoom)
+			manager.POST("/rooms/:rid/status",      h.SetRoomStatus)
 			manager.GET("/bookings",               h.ManagerBookings)
 			manager.POST("/bookings/:id/status",   h.UpdateBookingStatus)
 		manager.GET("/payments",               h.ManagerPayments)

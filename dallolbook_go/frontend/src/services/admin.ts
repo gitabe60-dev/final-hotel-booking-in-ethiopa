@@ -68,6 +68,7 @@ export const adminService = {
   managerEditRoom:    (rid: number, data: any) => adminApi.put(`/manager/rooms/${rid}`, data),
   managerDeleteRoom:  (rid: number) => adminApi.delete(`/manager/rooms/${rid}`),
   managerToggleRoom:  (rid: number) => adminApi.post(`/manager/rooms/${rid}/toggle`),
+  managerSetRoomStatus: (rid: number, status: string) => adminApi.post(`/manager/rooms/${rid}/status`, { status }),
   managerBookings:    (status?: string) => adminApi.get('/manager/bookings', { params: { status } }),
   updateBookingStatus:(id: number, status: string) => adminApi.post(`/manager/bookings/${id}/status`, { status }),
   managerPayments:    () => adminApi.get('/manager/payments'),
