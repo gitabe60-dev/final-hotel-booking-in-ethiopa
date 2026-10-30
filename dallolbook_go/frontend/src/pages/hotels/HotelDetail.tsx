@@ -82,8 +82,8 @@ export default function HotelDetail() {
   }, [checkIn, checkOut])
 
   /* ─── Book selected room ──────────────────────── */
-  // Book Now goes DIRECTLY to booking form — no login check here.
-  // BookingConfirm will handle collecting all guest info.
+  // If not logged in → send to login with redirect back to booking page.
+  // If logged in → go directly to booking form.
   const handleBook = (room?: any) => {
     const r = room || selectedRoom
     const params = new URLSearchParams({
@@ -96,7 +96,14 @@ export default function HotelDetail() {
       params.set('room_name',  r.name)
       params.set('room_price', String(r.price_per_night))
     }
-    navigate(`/booking/${id}?${params.toString()}`)
+    const bookingPath = `/booking/${id}?${params.toString()}`
+
+    if (!isAuthenticated) {
+      // Send to login, then come back to booking after login/register
+      navigate(`/login?redirect=${encodeURIComponent(bookingPath)}`)
+    } else {
+      navigate(bookingPath)
+    }
   }
 
   /* ─── Wishlist ──────────────────────────────── */
@@ -508,7 +515,9 @@ export default function HotelDetail() {
                   </button>
 
                   <p className="text-center text-xs text-gray-400">
-                    No account needed — fill your details on the next screen
+                    {isAuthenticated
+                      ? 'Select a room above and click Book Now'
+                      : 'You\'ll be asked to sign in or create a free account'}
                   </p>
 
                   {/* Quick stats */}

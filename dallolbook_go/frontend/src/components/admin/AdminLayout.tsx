@@ -41,7 +41,7 @@ export default function AdminLayout({ children, role }: Props) {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const logout = () => { logoutAdmin(); navigate('/admin/login') }
+  const logout = () => { logoutAdmin(); navigate('/login') }
 
   const navItems = NAV[role] || []
 

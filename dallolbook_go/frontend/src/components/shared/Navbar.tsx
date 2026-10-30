@@ -61,10 +61,6 @@ export default function Navbar() {
           ) : (
             <div className="flex gap-3 items-center">
               <Link to="/login" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">Login</Link>
-              <Link to="/admin/login"
-                className="flex items-center gap-1.5 text-purple-600 hover:text-purple-800 font-medium transition-colors">
-                <ShieldCheck size={17} /> Admin
-              </Link>
               <Link to="/register"
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                 Register
@@ -97,7 +93,6 @@ export default function Navbar() {
           ) : (
             <>
               <Link to="/login" className="block text-gray-700 font-medium py-1" onClick={() => setMenuOpen(false)}>Login</Link>
-              <Link to="/admin/login" className="block text-purple-600 font-medium py-1" onClick={() => setMenuOpen(false)}>Admin Login</Link>
               <Link to="/register" className="block text-blue-600 font-medium py-1" onClick={() => setMenuOpen(false)}>Register</Link>
             </>
           )}

@@ -5,9 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Users, CreditCard, Upload, Check, ChevronRight, ChevronLeft,
   Bed, Copy, Phone, Building, Wallet, Smartphone, Info,
-  AlertCircle, IdCard, Mail, Calendar, User, MapPin, Lock
+  AlertCircle, IdCard, Mail, Calendar, User, MapPin
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useHotel } from '../../hooks/useHotels'
 import { hotelService } from '../../services/hotels'
@@ -99,7 +98,6 @@ export default function BookingConfirm() {
     last_name:    user?.last_name  || '',
     email:        user?.email      || '',
     phone:        user?.phone      || '',
-    password:     '',
     nationality:  '',
     check_in:     preCheckIn,
     check_out:    preCheckOut,
@@ -197,42 +195,6 @@ export default function BookingConfirm() {
       const natFront   = form.national_id_front || undefined
       const natBack    = form.national_id_back  || undefined
       const guestFull  = `${form.first_name.trim()} ${form.last_name.trim()}`
-
-      // If user is NOT logged in, try to auto-register or login first
-      let authToken = localStorage.getItem('token')
-
-      if (!authToken && guestEmail) {
-        try {
-          // Try login first (returning user)
-          const loginRes = await import('../../services/auth').then(m =>
-            m.authService.login(guestEmail, form.password || 'guest123')
-          )
-          localStorage.setItem('token', loginRes.data.data.token)
-          localStorage.setItem('user', JSON.stringify(loginRes.data.data.user))
-          authToken = loginRes.data.data.token
-        } catch {
-          // Login failed → try register as new user
-          try {
-            const regRes = await import('../../services/auth').then(m =>
-              m.authService.register({
-                first_name: form.first_name.trim(),
-                last_name:  form.last_name.trim(),
-                email:      guestEmail,
-                phone:      guestPhone,
-                password:   form.password || 'guest123',
-              })
-            )
-            localStorage.setItem('token', regRes.data.data.token)
-            localStorage.setItem('user', JSON.stringify(regRes.data.data.user))
-            authToken = regRes.data.data.token
-          } catch (regErr: any) {
-            // If email already exists but wrong password, show error
-            toast.error(regErr.response?.data?.message || 'Please sign in first')
-            navigate('/login')
-            return
-          }
-        }
-      }
 
       const bRes = await bookingService.create({
         hotel_id:         Number(id),
@@ -378,31 +340,6 @@ export default function BookingConfirm() {
                         className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pl-9 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
                     </div>
                   </F>
-
-                  {/* Password field — for new users to auto-register, or returning users to verify */}
-                  {!user && (
-                    <F label="Create Password" error={null}
-                      hint="Set a password for your account — you can use it to log in next time">
-                      <div className="relative">
-                        <Lock size={15} className="absolute left-3 top-3 text-gray-400" />
-                        <input type="password" value={form.password} onChange={set('password')}
-                          placeholder="Min 6 characters"
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pl-9 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
-                      </div>
-                    </F>
-                  )}
-
-                  {/* Login link for returning users */}
-                  {!user && (
-                    <div className="flex items-center justify-between bg-purple-50 rounded-xl p-3 border border-purple-100">
-                      <p className="text-xs text-purple-700">
-                        Already booked before? Sign in to skip the form.
-                      </p>
-                      <Link to="/login" className="text-xs text-purple-600 font-semibold hover:underline flex items-center gap-1">
-                        Sign In <ChevronRight size={12} />
-                      </Link>
-                    </div>
-                  )}
                 </div>
 
                 {/* ── Dates & Guests ── */}

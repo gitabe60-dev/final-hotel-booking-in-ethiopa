@@ -22,8 +22,7 @@ import BookingConfirm from '../pages/booking/BookingConfirm'
 import Payment        from '../pages/payment/Payment'
 import PaymentSuccess from '../pages/payment/PaymentSuccess'
 
-// Admin pages
-import AdminLogin       from '../pages/admin/AdminLogin'
+// Admin pages (no separate AdminLogin — uses unified /login)
 import SuperDashboard   from '../pages/admin/SuperDashboard'
 import SubAdminDashboard from '../pages/admin/SubAdminDashboard'
 import BrokerDashboard  from '../pages/admin/BrokerDashboard'
@@ -55,8 +54,8 @@ function PrivateRoute({ children }: { children: JSX.Element }) {
 
 function AdminRoute({ children, role }: { children: JSX.Element; role: string }) {
   const { isAdminAuthenticated, adminUser } = useAuth()
-  if (!isAdminAuthenticated) return <Navigate to="/admin/login" replace />
-  if (adminUser?.role !== role) return <Navigate to="/admin/login" replace />
+  if (!isAdminAuthenticated) return <Navigate to="/login" replace />
+  if (adminUser?.role !== role) return <Navigate to="/login" replace />
   return children
 }
 
@@ -83,8 +82,8 @@ export default function AppRouter() {
       <Route path="/payment/:id"        element={<PrivateRoute><Payment /></PrivateRoute>} />
       <Route path="/payment/:id/success" element={<PrivateRoute><PaymentSuccess /></PrivateRoute>} />
 
-      {/* ── Admin Auth ─────────────────────────────────── */}
-      <Route path="/admin/login" element={<AdminLogin />} />
+      {/* ── Admin Auth — redirect to unified login ──── */}
+      <Route path="/admin/login" element={<Navigate to="/login" replace />} />
 
       {/* ── Super Admin ────────────────────────────────── */}
       <Route path="/admin/super/dashboard"    element={<AdminRoute role="super_admin"><SuperDashboard /></AdminRoute>} />

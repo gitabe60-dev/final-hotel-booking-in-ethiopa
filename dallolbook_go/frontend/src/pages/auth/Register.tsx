@@ -1,6 +1,6 @@
 // pages/auth/Register.tsx
 import { useState, FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User, Mail, Phone, Lock, Globe, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -43,7 +43,9 @@ const cls = (err: FieldError, touched: boolean) =>
 
 export default function Register() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { setAuth } = useAuth()
+  const redirectTo = searchParams.get('redirect') || '/dashboard'
   const [form, setForm] = useState({
     first_name: '', last_name: '', email: '', phone: '', password: '', nationality: ''
   })
@@ -98,7 +100,7 @@ export default function Register() {
       })
       setAuth(res.data.data.user, res.data.data.token)
       toast.success('Account created! Welcome 🎉')
-      navigate('/dashboard')
+      navigate(redirectTo)
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Registration failed')
     } finally { setLoading(false) }
@@ -205,7 +207,8 @@ export default function Register() {
 
         <p className="mt-5 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 font-semibold hover:underline">Sign in</Link>
+          <Link to={`/login${redirectTo !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+            className="text-blue-600 font-semibold hover:underline">Sign in</Link>
         </p>
       </motion.div>
     </div>
