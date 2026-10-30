@@ -42,6 +42,7 @@ export default function HotelDetail() {
   const [reviewForm, setReviewForm]     = useState({ rating: 5, comment: '' })
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [submittingReview, setSubmittingReview] = useState(false)
+  const [contactPhone, setContactPhone] = useState<string>('')
 
   // Date + availability
   const [checkIn, setCheckIn]   = useState(today())
@@ -73,6 +74,15 @@ export default function HotelDetail() {
       checkAvailability(checkIn, checkOut)
       hotelService.getReviews(Number(id), 6, 0)
         .then(r => setReviews(r.data.data?.reviews || []))
+        .catch(() => {})
+      // Get hotel contact phone from payment methods
+      hotelService.getPaymentMethods(Number(id))
+        .then(res => {
+          const methods = res.data.data || []
+          const telebirr = methods.find((m: any) => m.method === 'telebirr')
+          const cbe = methods.find((m: any) => m.method === 'cbe_birr')
+          setContactPhone((telebirr || cbe)?.phone_number || '')
+        })
         .catch(() => {})
     }
   }, [id])
@@ -194,6 +204,12 @@ export default function HotelDetail() {
                     <StarRating rating={hotel.rating} />
                     <span className="text-sm text-gray-500">{hotel.review_count} reviews</span>
                   </div>
+                  {contactPhone && (
+                    <a href={`tel:${contactPhone}`}
+                      className="inline-flex items-center gap-1.5 mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                      <span>📞</span> {contactPhone}
+                    </a>
+                  )}
                 </div>
                 <button onClick={toggleWishlist}
                   className={`p-3 rounded-xl border-2 transition-all flex-shrink-0 ${

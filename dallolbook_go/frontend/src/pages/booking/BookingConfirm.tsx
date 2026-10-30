@@ -26,14 +26,13 @@ import {
 const today    = () => new Date().toISOString().split('T')[0]
 const tomorrow = () => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0] }
 
-// ─── All Ethiopian payment methods (no cash, no card, no mobile_money) ────────
+// ─── All Ethiopian payment methods (no cash, no card, no mobile_money, no bank_transfer duplicate) ──
 const PM_CONFIG: Record<string, {
   label: string; logo: string; bgGrad: string; badgeColor: string
 }> = {
   telebirr:     { label: 'Telebirr',              logo: '📱', bgGrad: 'from-green-500 to-emerald-600',   badgeColor: 'bg-green-50 border-green-200 text-green-800'   },
   cbe_birr:     { label: 'CBE Birr',              logo: '🏦', bgGrad: 'from-amber-500 to-yellow-600',    badgeColor: 'bg-amber-50 border-amber-200 text-amber-800'   },
   chapa:        { label: 'Chapa',                 logo: '🔵', bgGrad: 'from-blue-500 to-blue-600',       badgeColor: 'bg-blue-50 border-blue-200 text-blue-800'      },
-  bank_transfer:{ label: 'CBE Transfer',          logo: '🏛️', bgGrad: 'from-sky-500 to-cyan-600',        badgeColor: 'bg-sky-50 border-sky-200 text-sky-800'         },
   awash_bank:   { label: 'Awash Bank',            logo: '🏦', bgGrad: 'from-purple-500 to-purple-600',   badgeColor: 'bg-purple-50 border-purple-200 text-purple-800'},
   abyssinia:    { label: 'Bank of Abyssinia',     logo: '🏦', bgGrad: 'from-rose-500 to-pink-600',       badgeColor: 'bg-rose-50 border-rose-200 text-rose-800'      },
   dashen:       { label: 'Dashen Bank',           logo: '🏦', bgGrad: 'from-teal-500 to-teal-600',       badgeColor: 'bg-teal-50 border-teal-200 text-teal-800'      },
@@ -292,7 +291,9 @@ export default function BookingConfirm() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-extrabold">ETB {total.toLocaleString()}</p>
-                      <p className="text-blue-200 text-xs">{form.rooms} room{Number(form.rooms) > 1 ? 's' : ''} total</p>
+                      <p className="text-blue-200 text-xs">
+                        ETB {unitPrice.toLocaleString()} × {nights} night{nights > 1 ? 's' : ''} × {form.rooms} room{Number(form.rooms) > 1 ? 's' : ''}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -361,18 +362,23 @@ export default function BookingConfirm() {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     {([
-                      { k: 'adults' as const,   label: 'Adults',   min: 1, err: e1.adults },
-                      { k: 'children' as const, label: 'Children', min: 0, err: null       },
-                      { k: 'rooms' as const,    label: 'Rooms',    min: 1, err: e1.rooms   },
+                      { k: 'adults' as const,   label: 'Adults',   min: 1, max: 10, err: e1.adults },
+                      { k: 'children' as const, label: 'Children', min: 0, max: 10, err: null       },
+                      { k: 'rooms' as const,    label: 'Rooms',    min: 1, max: 2,  err: e1.rooms   },
                     ]).map(f => (
                       <F key={f.k} label={f.label} error={touched[f.k] ? f.err as FieldError : null} required={f.min > 0}>
                         <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
-                          <button type="button" onClick={() => inc(f.k, f.min)(-1)}
-                            className="px-3 py-2.5 text-gray-500 hover:bg-gray-100 font-bold border-r border-gray-200 text-lg">−</button>
+                          <button type="button"
+                            onClick={() => { const v = Math.max(f.min, Number((form as any)[f.k]) - 1); setForm(p => ({ ...p, [f.k]: v })); setTouched(t => ({ ...t, [f.k]: true })) }}
+                            disabled={Number((form as any)[f.k]) <= f.min}
+                            className="px-3 py-2.5 text-gray-500 hover:bg-gray-100 font-bold border-r border-gray-200 text-lg disabled:opacity-30 disabled:cursor-not-allowed">−</button>
                           <span className="flex-1 text-center text-sm font-semibold py-2.5 bg-white">{(form as any)[f.k]}</span>
-                          <button type="button" onClick={() => inc(f.k, f.min)(1)}
-                            className="px-3 py-2.5 text-gray-500 hover:bg-gray-100 font-bold border-l border-gray-200 text-lg">+</button>
+                          <button type="button"
+                            onClick={() => { const v = Math.min(f.max, Number((form as any)[f.k]) + 1); setForm(p => ({ ...p, [f.k]: v })); setTouched(t => ({ ...t, [f.k]: true })) }}
+                            disabled={Number((form as any)[f.k]) >= f.max}
+                            className="px-3 py-2.5 text-gray-500 hover:bg-gray-100 font-bold border-l border-gray-200 text-lg disabled:opacity-30 disabled:cursor-not-allowed">+</button>
                         </div>
+                        {f.k === 'rooms' && <p className="text-[10px] text-gray-400 mt-1 text-center">Max 2 rooms</p>}
                       </F>
                     ))}
                   </div>

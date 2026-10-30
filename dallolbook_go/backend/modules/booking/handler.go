@@ -55,10 +55,15 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate required fields
+	// Validate required fields and constraints
 	if body.HotelID == 0 || body.CheckIn == "" || body.CheckOut == "" ||
 		body.Adults == 0 || body.Rooms == 0 || body.PaymentMethod == "" {
 		utils.Unprocessable(c, "hotel_id, check_in, check_out, adults, rooms, payment_method are required")
+		return
+	}
+	// Enforce maximum 2 rooms per booking
+	if body.Rooms > 2 {
+		utils.Unprocessable(c, "Maximum 2 rooms can be booked at a time")
 		return
 	}
 
