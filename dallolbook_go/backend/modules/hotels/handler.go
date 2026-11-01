@@ -82,17 +82,17 @@ func (h *Handler) Availability(c *gin.Context) {
 	checkIn := c.Query("check_in")
 	checkOut := c.Query("check_out")
 	if checkIn == "" || checkOut == "" {
-		// Default: today + tomorrow
 		today := time.Now()
 		checkIn = today.Format("2006-01-02")
 		checkOut = today.AddDate(0, 0, 1).Format("2006-01-02")
 	}
-	rooms, err := h.model.GetAvailableRooms(id, checkIn, checkOut)
+	// Return ALL rooms with occupation status (occupied rooms show checkout date)
+	rooms, err := h.model.GetAllRoomsWithStatus(id, checkIn, checkOut)
 	if err != nil {
 		utils.ServerError(c, "Failed to check availability")
 		return
 	}
-	utils.Success(c, "Available rooms.", gin.H{"rooms": rooms, "check_in": checkIn, "check_out": checkOut})
+	utils.Success(c, "Room availability.", gin.H{"rooms": rooms, "check_in": checkIn, "check_out": checkOut})
 }
 
 // GET /api/v1/hotels/:id/payment-methods  (public — no auth needed)

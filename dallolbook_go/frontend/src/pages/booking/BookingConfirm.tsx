@@ -19,7 +19,7 @@ import {
   validateName, validateEmail, validatePhone,
   validateFutureDate, validateDateRange,
   validateTransactionId, validatePositiveNumber,
-  hasErrors, FieldError
+  hasErrors, FieldError, fileToBase64
 } from '../../utils/validate'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -85,12 +85,15 @@ export default function BookingConfirm() {
   const preRoomId    = urlP.get('room_id')    ? Number(urlP.get('room_id'))    : undefined
   const preRoomName  = urlP.get('room_name')  || ''
   const preRoomPrice = urlP.get('room_price') ? Number(urlP.get('room_price')) : 0
+  const preRooms     = urlP.get('rooms')      ? Number(urlP.get('rooms'))      : 1
+  const preMaxGuests = urlP.get('max_guests') ? Number(urlP.get('max_guests')) : 2
 
-  const [step, setStep]         = useState(1)  // 1 = guest + dates, 2 = payment
+  const [step, setStep]         = useState(1)
   const [submitting, setSub]    = useState(false)
   const [payMethods, setPayMethods] = useState<any[]>([])
   const [pmLoading, setPmLoad]  = useState(true)
   const [touched, setTouched]   = useState<Record<string, boolean>>({})
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
 
   const [form, setForm] = useState({
     first_name:   user?.first_name || '',
@@ -100,9 +103,9 @@ export default function BookingConfirm() {
     nationality:  '',
     check_in:     preCheckIn,
     check_out:    preCheckOut,
-    adults:       1,
+    adults:       preMaxGuests > 0 ? Math.min(preMaxGuests, preMaxGuests) : 1,
     children:     0,
-    rooms:        1,
+    rooms:        preRooms,
     special_requests: '',
     national_id_front: '',
     national_id_back:  '',
@@ -111,9 +114,11 @@ export default function BookingConfirm() {
     screenshot_url:    '',
   })
 
-  const nights   = Math.max(1, Math.round((new Date(form.check_out).getTime() - new Date(form.check_in).getTime()) / 86400000))
-  const unitPrice = preRoomPrice || hotel?.price_per_night || 0
-  const total     = unitPrice * nights * Number(form.rooms)
+  const nights    = Math.max(1, Math.round((new Date(form.check_out).getTime() - new Date(form.check_in).getTime()) / 86400000))
+  const unitPrice  = preRoomPrice || hotel?.price_per_night || 0
+  const total      = unitPrice * nights * Number(form.rooms)
+  // Capacity: preMaxGuests is the total capacity for all selected rooms
+  const totalCapacity = preMaxGuests > 0 ? preMaxGuests : (Number(form.rooms) * 2)
 
   const set  = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(f => ({ ...f, [k]: e.target.value }))
@@ -143,20 +148,26 @@ export default function BookingConfirm() {
 
   // ── Step 1 validation ─────────────────────────────────────────────────────
   const e1 = {
-    first_name: validateName(form.first_name, 'First name'),
-    last_name:  validateName(form.last_name, 'Last name'),
-    email:      validateEmail(form.email, !form.phone),
-    phone:      validatePhone(form.phone, !form.email),
-    check_in:   validateFutureDate(form.check_in, 'Check-in'),
-    check_out:  validateDateRange(form.check_in, form.check_out),
-    adults:     validatePositiveNumber(form.adults, 'Adults'),
-    rooms:      validatePositiveNumber(form.rooms, 'Rooms'),
+    first_name:         validateName(form.first_name, 'First name'),
+    last_name:          validateName(form.last_name, 'Last name'),
+    email:              validateEmail(form.email, !form.phone),
+    phone:              validatePhone(form.phone, !form.email),
+    check_in:           validateFutureDate(form.check_in, 'Check-in'),
+    check_out:          validateDateRange(form.check_in, form.check_out),
+    adults:             validatePositiveNumber(form.adults, 'Adults'),
+    rooms:              validatePositiveNumber(form.rooms, 'Rooms'),
+    national_id_front:  !form.national_id_front ? 'National ID front photo is required' : null,
+    national_id_back:   !form.national_id_back  ? 'National ID back photo is required'  : null,
+    capacity: (Number(form.adults) + Number(form.children)) > totalCapacity
+      ? `Total guests (${Number(form.adults) + Number(form.children)}) exceed room capacity (${totalCapacity} guests for ${form.rooms} room${Number(form.rooms) > 1 ? 's' : ''})`
+      : null,
   }
 
   // ── Step 2 validation ─────────────────────────────────────────────────────
   const e2 = {
     payment_method: !form.payment_method ? 'Select a payment method' : null,
     transaction_id: validateTransactionId(form.transaction_id),
+    screenshot_url: !form.screenshot_url ? 'Payment screenshot is required' : null,
   }
 
   const touchAll = (errs: Record<string, FieldError>) =>
@@ -165,17 +176,38 @@ export default function BookingConfirm() {
   const goStep2 = () => {
     touchAll(e1)
     if (!hasErrors(e1)) { setStep(2); window.scrollTo(0, 0) }
-    else toast.error('Please fix the errors highlighted in red')
+    else {
+      toast.error('Please complete all required fields including National ID photos')
+      // Scroll to first error
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
-  // Image pickers
+  // Image pickers — convert to base64 so they can be sent to server and opened anywhere
   const pickImg = (field: 'national_id_front' | 'national_id_back' | 'screenshot_url') =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
-      const url = URL.createObjectURL(file)
-      setForm(f => ({ ...f, [field]: url }))
-      toast.success(field === 'screenshot_url' ? 'Screenshot attached ✓' : 'ID photo attached ✓')
+      // Validate file type and size
+      if (!file.type.startsWith('image/')) {
+        toast.error('Only image files are accepted (JPG, PNG, WEBP)')
+        return
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be smaller than 5MB')
+        return
+      }
+      setUploading(u => ({ ...u, [field]: true }))
+      try {
+        const base64 = await fileToBase64(file)
+        setForm(f => ({ ...f, [field]: base64 }))
+        setTouched(t => ({ ...t, [field]: true }))
+        toast.success(field === 'screenshot_url' ? 'Screenshot attached ✓' : 'ID photo attached ✓')
+      } catch {
+        toast.error('Failed to process image. Please try again.')
+      } finally {
+        setUploading(u => ({ ...u, [field]: false }))
+      }
     }
 
   const copy = (text: string, label: string) => {
@@ -186,7 +218,13 @@ export default function BookingConfirm() {
   // Submit
   const submit = async () => {
     touchAll(e2)
-    if (hasErrors(e2)) { toast.error('Please add transaction ID'); return }
+    if (hasErrors(e2)) {
+      if (!form.payment_method)  toast.error('Please select a payment method')
+      else if (!form.transaction_id || form.transaction_id.trim().length < 4) toast.error('Transaction ID is required')
+      else if (!form.screenshot_url) toast.error('Payment screenshot is required — please upload a screenshot')
+      else toast.error('Please fix the errors above')
+      return
+    }
     setSub(true)
     try {
       const guestEmail = form.email.trim() || undefined
@@ -387,6 +425,19 @@ export default function BookingConfirm() {
                       rows={2} placeholder="Early check-in, room preferences, allergies…"
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none resize-none" />
                   </F>
+
+                  {/* Capacity info */}
+                  <div className={`rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${
+                    e1.capacity ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-blue-50 border border-blue-100 text-blue-700'
+                  }`}>
+                    <Users size={15} className="flex-shrink-0 mt-0.5" />
+                    <div>
+                      {e1.capacity
+                        ? <span className="font-medium">{e1.capacity}</span>
+                        : <span>Room capacity: max <strong>{totalCapacity}</strong> guests for {form.rooms} room{Number(form.rooms) > 1 ? 's' : ''}</span>
+                      }
+                    </div>
+                  </div>
                 </div>
 
                 {/* ── National ID ── */}
@@ -402,15 +453,23 @@ export default function BookingConfirm() {
 
                   <div className="grid grid-cols-2 gap-4">
                     {([
-                      { field: 'national_id_front' as const, label: 'Front Side', icon: '🪪' },
-                      { field: 'national_id_back'  as const, label: 'Back Side',  icon: '🪪' },
+                      { field: 'national_id_front' as const, label: 'Front Side *', icon: '🪪' },
+                      { field: 'national_id_back'  as const, label: 'Back Side *',  icon: '🪪' },
                     ]).map(({ field, label, icon }) => (
                       <div key={field}>
                         <p className="text-sm font-semibold text-gray-700 mb-2">{label}</p>
                         <label className={`block border-2 border-dashed rounded-xl cursor-pointer transition-all ${
-                          form[field] ? 'border-emerald-400 bg-emerald-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                          uploading[field]      ? 'border-blue-400 bg-blue-50 opacity-70'
+                          : form[field]         ? 'border-emerald-400 bg-emerald-50'
+                          : touched[field] && e1[field] ? 'border-red-400 bg-red-50'
+                          : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                         }`}>
-                          {form[field] ? (
+                          {uploading[field] ? (
+                            <div className="p-4 text-center space-y-2">
+                              <div className="w-6 h-6 border-2 border-blue-400 border-t-blue-600 rounded-full animate-spin mx-auto" />
+                              <p className="text-xs text-blue-600 font-medium">Processing…</p>
+                            </div>
+                          ) : form[field] ? (
                             <div className="p-2">
                               <img src={form[field]} alt={label} className="w-full h-28 object-cover rounded-lg" />
                               <p className="text-xs text-center text-emerald-600 mt-1.5 font-medium flex items-center justify-center gap-1">
@@ -421,16 +480,21 @@ export default function BookingConfirm() {
                             <div className="p-4 text-center space-y-1">
                               <span className="text-3xl">{icon}</span>
                               <p className="text-xs text-gray-500 font-medium">Tap to upload</p>
-                              <p className="text-[10px] text-gray-400">JPG or PNG</p>
+                              <p className="text-[10px] text-gray-400">JPG or PNG, max 5MB</p>
                             </div>
                           )}
-                          <input type="file" accept="image/*" onChange={pickImg(field)} className="hidden" />
+                          <input type="file" accept="image/*" onChange={pickImg(field)} className="hidden" disabled={uploading[field]} />
                         </label>
-                        {form[field] && (
-                          <button onClick={() => setForm(f => ({ ...f, [field]: '' }))}
+                        {form[field] && !uploading[field] && (
+                          <button onClick={() => { setForm(f => ({ ...f, [field]: '' })); setTouched(t => ({ ...t, [field]: true })) }}
                             className="text-xs text-red-400 mt-1 hover:text-red-600 w-full text-center">
                             Remove
                           </button>
+                        )}
+                        {touched[field] && e1[field] && (
+                          <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                            <AlertCircle size={11} /> {e1[field]}
+                          </p>
                         )}
                       </div>
                     ))}
@@ -587,29 +651,42 @@ export default function BookingConfirm() {
 
                     <div>
                       <p className="text-sm font-semibold text-gray-700 mb-2">
-                        Payment Screenshot <span className="text-gray-400 text-xs font-normal">(optional but recommended)</span>
+                        Payment Screenshot <span className="text-red-500">*</span>
                       </p>
                       <label className={`block border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${
-                        form.screenshot_url ? 'border-emerald-400 bg-emerald-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                        uploading.screenshot_url       ? 'border-blue-400 bg-blue-50 opacity-70'
+                        : form.screenshot_url          ? 'border-emerald-400 bg-emerald-50'
+                        : touched.screenshot_url && e2.screenshot_url ? 'border-red-400 bg-red-50'
+                        : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                       }`}>
-                        {form.screenshot_url ? (
+                        {uploading.screenshot_url ? (
+                          <div className="space-y-2">
+                            <div className="w-8 h-8 border-2 border-blue-400 border-t-blue-600 rounded-full animate-spin mx-auto" />
+                            <p className="text-sm text-blue-600 font-medium">Processing screenshot…</p>
+                          </div>
+                        ) : form.screenshot_url ? (
                           <div>
                             <img src={form.screenshot_url} alt="screenshot" className="max-h-40 mx-auto rounded-xl shadow-sm mb-2" />
                             <p className="text-xs text-emerald-600 font-semibold flex items-center justify-center gap-1">
                               <Check size={13} /> Screenshot attached
                             </p>
-                            <span onClick={() => setForm(f => ({ ...f, screenshot_url: '' }))}
+                            <span onClick={() => { setForm(f => ({ ...f, screenshot_url: '' })); setTouched(t => ({ ...t, screenshot_url: true })) }}
                               className="text-xs text-red-400 mt-1 inline-block cursor-pointer hover:text-red-600">Remove</span>
                           </div>
                         ) : (
                           <div className="space-y-1.5">
                             <Upload size={32} className="mx-auto text-gray-400" />
                             <p className="text-sm font-medium text-gray-600">Click to upload screenshot</p>
-                            <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+                            <p className="text-xs text-gray-400">PNG, JPG up to 5MB — <strong>Required</strong></p>
                           </div>
                         )}
-                        <input type="file" accept="image/*" onChange={pickImg('screenshot_url')} className="hidden" />
+                        <input type="file" accept="image/*" onChange={pickImg('screenshot_url')} className="hidden" disabled={uploading.screenshot_url} />
                       </label>
+                      {touched.screenshot_url && e2.screenshot_url && (
+                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                          <AlertCircle size={11} /> {e2.screenshot_url}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}

@@ -2,6 +2,32 @@
 
 export type FieldError = string | null
 
+// ─── Image upload helper ──────────────────────────────────────────────────────
+// Converts a File to a base64 data URL so it can be sent to the server
+// and displayed anywhere (new tabs, img tags, etc.)
+export const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload  = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('Failed to read file'))
+    reader.readAsDataURL(file)
+  })
+
+// Open a base64 or URL image in a new browser tab
+export const openImageInNewTab = (src: string) => {
+  if (!src) return
+  const w = window.open()
+  if (w) {
+    w.document.write(`
+      <html><head><title>Image</title>
+      <style>body{margin:0;background:#111;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+      img{max-width:100%;max-height:100vh;object-fit:contain;border-radius:8px;}</style>
+      </head><body><img src="${src}" /></body></html>
+    `)
+    w.document.close()
+  }
+}
+
 // Letters, spaces and hyphens only (names)
 export const validateName = (v: string, label = 'Name'): FieldError => {
   if (!v.trim()) return `${label} is required`

@@ -11,8 +11,8 @@ import PageHeader from '../../../components/shared/PageHeader'
 import Badge from '../../../components/shared/Badge'
 import Spinner from '../../../components/shared/Spinner'
 import EmptyState from '../../../components/shared/EmptyState'
-import Modal from '../../../components/shared/Modal'
 import { adminService } from '../../../services/admin'
+import { openImageInNewTab } from '../../../utils/validate'
 import toast from 'react-hot-toast'
 
 const STATUS_COLOR: Record<string, string> = {
@@ -43,7 +43,6 @@ export default function ManagerPaymentsPage() {
   const [loading, setLoading]   = useState(true)
   const [filter, setFilter]     = useState<'all' | 'submitted' | 'completed' | 'failed' | 'pending'>('all')
   const [expanded, setExpanded] = useState<number | null>(null)
-  const [lightbox, setLightbox] = useState<{ src: string; title: string } | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -257,11 +256,11 @@ export default function ManagerPaymentsPage() {
                                   <div className="p-2">
                                     <img src={p.screenshot_url} alt="Payment proof"
                                       className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                      onClick={() => setLightbox({ src: p.screenshot_url, title: 'Payment Screenshot' })} />
+                                      onClick={() => openImageInNewTab(p.screenshot_url)} />
                                     <button
-                                      onClick={() => setLightbox({ src: p.screenshot_url, title: 'Payment Screenshot' })}
+                                      onClick={() => openImageInNewTab(p.screenshot_url)}
                                       className="w-full mt-1.5 text-xs text-blue-600 hover:text-blue-800 flex items-center justify-center gap-1">
-                                      <ExternalLink size={11} /> View full size
+                                      <ExternalLink size={11} /> Open in new tab
                                     </button>
                                   </div>
                                 </div>
@@ -276,11 +275,11 @@ export default function ManagerPaymentsPage() {
                                   <div className="p-2">
                                     <img src={p.national_id_front} alt="ID Front"
                                       className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                      onClick={() => setLightbox({ src: p.national_id_front, title: 'National ID — Front' })} />
+                                      onClick={() => openImageInNewTab(p.national_id_front)} />
                                     <button
-                                      onClick={() => setLightbox({ src: p.national_id_front, title: 'National ID — Front' })}
+                                      onClick={() => openImageInNewTab(p.national_id_front)}
                                       className="w-full mt-1.5 text-xs text-blue-600 hover:text-blue-800 flex items-center justify-center gap-1">
-                                      <ExternalLink size={11} /> View full size
+                                      <ExternalLink size={11} /> Open in new tab
                                     </button>
                                   </div>
                                 </div>
@@ -295,11 +294,11 @@ export default function ManagerPaymentsPage() {
                                   <div className="p-2">
                                     <img src={p.national_id_back} alt="ID Back"
                                       className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                      onClick={() => setLightbox({ src: p.national_id_back, title: 'National ID — Back' })} />
+                                      onClick={() => openImageInNewTab(p.national_id_back)} />
                                     <button
-                                      onClick={() => setLightbox({ src: p.national_id_back, title: 'National ID — Back' })}
+                                      onClick={() => openImageInNewTab(p.national_id_back)}
                                       className="w-full mt-1.5 text-xs text-blue-600 hover:text-blue-800 flex items-center justify-center gap-1">
-                                      <ExternalLink size={11} /> View full size
+                                      <ExternalLink size={11} /> Open in new tab
                                     </button>
                                   </div>
                                 </div>
@@ -330,21 +329,6 @@ export default function ManagerPaymentsPage() {
           })}
         </div>
       )}
-
-      {/* Lightbox */}
-      <Modal open={!!lightbox} onClose={() => setLightbox(null)}
-        title={lightbox?.title || 'Document'} size="lg">
-        {lightbox && (
-          <div className="flex flex-col items-center gap-3">
-            <img src={lightbox.src} alt={lightbox.title}
-              className="max-w-full max-h-[70vh] rounded-xl shadow-lg object-contain" />
-            <a href={lightbox.src} target="_blank" rel="noreferrer"
-              className="flex items-center gap-1.5 text-blue-600 text-sm hover:underline font-medium">
-              <ExternalLink size={14} /> Open in new tab
-            </a>
-          </div>
-        )}
-      </Modal>
     </AdminLayout>
   )
 }

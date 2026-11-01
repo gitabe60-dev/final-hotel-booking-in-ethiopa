@@ -296,6 +296,73 @@ func (m *Model) GetAvailableRooms(hotelID int, checkIn, checkOut string) ([]Room
 	return rooms, nil
 }
 
+// GetAllRoomsWithStatus returns ALL rooms for a hotel with availability info for given dates.
+// Occupied rooms include who booked them and until when.
+func (m *Model) GetAllRoomsWithStatus(hotelID int, checkIn, checkOut string) ([]map[string]any, error) {
+	rows, err := m.db.Query(`
+		SELECT rt.id, rt.hotel_id, rt.name, rt.bed_type, rt.image_url,
+		       rt.price_per_night, rt.size_sqm, rt.max_guests, rt.is_available, rt.room_status,
+		       COALESCE(occ.checkout_date::text, '') AS occupied_until,
+		       COALESCE(occ.guest_name, '')          AS occupied_by,
+		       COALESCE(occ.booking_id::text, '')    AS occupied_booking_id
+		FROM room_types rt
+		LEFT JOIN LATERAL (
+		    SELECT b.check_out AS checkout_date,
+		           u.first_name||' '||u.last_name AS guest_name,
+		           b.id AS booking_id
+		    FROM bookings b
+		    JOIN users u ON u.id = b.user_id
+		    WHERE b.room_type_id = rt.id
+		      AND b.hotel_id = $1
+		      AND b.status IN ('pending','confirmed')
+		      AND b.check_in < $3::date
+		      AND b.check_out > $2::date
+		    ORDER BY b.check_out DESC
+		    LIMIT 1
+		) occ ON true
+		WHERE rt.hotel_id = $1
+		ORDER BY rt.price_per_night ASC`, hotelID, checkIn, checkOut)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var result []map[string]any
+	for rows.Next() {
+		var id, hotelId, maxGuests int
+		var name, bedType, roomStatus string
+		var imageURL *string
+		var price, sizeSqm float64
+		var isAvail bool
+		var occupiedUntil, occupiedBy, occupiedBookingID string
+		rows.Scan(&id, &hotelId, &name, &bedType, &imageURL,
+			&price, &sizeSqm, &maxGuests, &isAvail, &roomStatus,
+			&occupiedUntil, &occupiedBy, &occupiedBookingID)
+
+		isOccupied := occupiedUntil != ""
+		status := roomStatus
+		if isOccupied {
+			status = "occupied"
+		}
+
+		result = append(result, map[string]any{
+			"id":             id,
+			"hotel_id":       hotelId,
+			"name":           name,
+			"bed_type":       bedType,
+			"image_url":      imageURL,
+			"price_per_night": price,
+			"size_sqm":       sizeSqm,
+			"max_guests":     maxGuests,
+			"is_available":   isAvail && !isOccupied,
+			"room_status":    status,
+			"is_occupied":    isOccupied,
+			"occupied_until": occupiedUntil,
+			"occupied_by":    occupiedBy,
+		})
+	}
+	return result, nil
+}
+
 // PaymentMethod represents a hotel's accepted payment method with account details.
 type PaymentMethod struct {
 	ID            int    `json:"id"`

@@ -3,6 +3,7 @@ package booking
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -97,14 +98,37 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// Validate hotel
+	// Validate hotel and get room capacity
 	price, active := h.model.GetHotelPrice(body.HotelID)
 	if !active {
 		utils.NotFound(c, "Hotel not found or unavailable")
 		return
 	}
 
-	// Calculate total price: price × nights × rooms
+	// If a room type is specified, validate guest count against capacity
+	if body.RoomTypeID != nil && *body.RoomTypeID > 0 {
+		var maxGuests int
+		h.db.QueryRow(`SELECT max_guests FROM room_types WHERE id=$1`, *body.RoomTypeID).Scan(&maxGuests)
+		if maxGuests > 0 {
+			totalGuests := body.Adults + body.Children
+			totalCapacity := maxGuests * body.Rooms
+			if totalGuests > totalCapacity {
+				utils.Unprocessable(c, fmt.Sprintf(
+					"Too many guests: %d guests exceed room capacity of %d (max %d per room × %d rooms). Please reduce guests or book more rooms.",
+					totalGuests, totalCapacity, maxGuests, body.Rooms))
+				return
+			}
+		}
+	}
+
+	// Calculate total price: use room price if room selected, else hotel base price
+	if body.RoomTypeID != nil && *body.RoomTypeID > 0 {
+		var roomPrice float64
+		h.db.QueryRow(`SELECT price_per_night FROM room_types WHERE id=$1`, *body.RoomTypeID).Scan(&roomPrice)
+		if roomPrice > 0 {
+			price = roomPrice
+		}
+	}
 	nights := outDate.Sub(inDate).Hours() / 24
 	totalPrice := price * nights * float64(body.Rooms)
 
