@@ -85,8 +85,10 @@ export default function BookingConfirm() {
   const preRoomId    = urlP.get('room_id')    ? Number(urlP.get('room_id'))    : undefined
   const preRoomName  = urlP.get('room_name')  || ''
   const preRoomPrice = urlP.get('room_price') ? Number(urlP.get('room_price')) : 0
+  // Number of rooms the user already selected on the hotel page — LOCKED, not editable here
   const preRooms     = urlP.get('rooms')      ? Number(urlP.get('rooms'))      : 1
-  const preMaxGuests = urlP.get('max_guests') ? Number(urlP.get('max_guests')) : 2
+  // Total max guests = max_guests per room × number of rooms (passed from HotelDetail)
+  const preMaxGuests = urlP.get('max_guests') ? Number(urlP.get('max_guests')) : preRooms * 2
 
   const [step, setStep]         = useState(1)
   const [submitting, setSub]    = useState(false)
@@ -103,9 +105,10 @@ export default function BookingConfirm() {
     nationality:  '',
     check_in:     preCheckIn,
     check_out:    preCheckOut,
-    adults:       preMaxGuests > 0 ? Math.min(preMaxGuests, preMaxGuests) : 1,
+    // Adults default = preMaxGuests (all capacity), user can reduce but not exceed
+    adults:       Math.max(1, preMaxGuests),
     children:     0,
-    rooms:        preRooms,
+    rooms:        preRooms,   // LOCKED — set from hotel selection, not editable
     special_requests: '',
     national_id_front: '',
     national_id_back:  '',
@@ -155,11 +158,11 @@ export default function BookingConfirm() {
     check_in:           validateFutureDate(form.check_in, 'Check-in'),
     check_out:          validateDateRange(form.check_in, form.check_out),
     adults:             validatePositiveNumber(form.adults, 'Adults'),
-    rooms:              validatePositiveNumber(form.rooms, 'Rooms'),
+    rooms:              null as FieldError,   // locked from hotel selection — not validated here
     national_id_front:  !form.national_id_front ? 'National ID front photo is required' : null,
     national_id_back:   !form.national_id_back  ? 'National ID back photo is required'  : null,
     capacity: (Number(form.adults) + Number(form.children)) > totalCapacity
-      ? `Total guests (${Number(form.adults) + Number(form.children)}) exceed room capacity (${totalCapacity} guests for ${form.rooms} room${Number(form.rooms) > 1 ? 's' : ''})`
+      ? `Total guests (${Number(form.adults) + Number(form.children)}) exceed room capacity (${totalCapacity} guests for ${preRooms} room${preRooms > 1 ? 's' : ''})`
       : null,
   }
 
@@ -386,6 +389,7 @@ export default function BookingConfirm() {
                   <h2 className="font-bold text-gray-800 flex items-center gap-2">
                     <Calendar size={18} className="text-blue-600" /> Stay Details
                   </h2>
+                  {/* ── Dates ── */}
                   <div className="grid grid-cols-2 gap-4">
                     <F label="Check-in" required error={touched.check_in ? e1.check_in : null}>
                       <input type="date" value={form.check_in} min={today()}
@@ -398,25 +402,72 @@ export default function BookingConfirm() {
                         className={inputCls(e1.check_out, !!touched.check_out)} />
                     </F>
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+
+                  {/* ── Rooms locked banner ── */}
+                  <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+                    <Bed size={18} className="text-blue-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-blue-800">
+                        {preRooms} Room{preRooms > 1 ? 's' : ''} Selected
+                        {preRoomName ? ` — ${preRoomName}` : ''}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-0.5">
+                        Room capacity: <strong>{preMaxGuests}</strong> guest{preMaxGuests > 1 ? 's' : ''} max
+                        {preRooms > 1 ? ` (${preMaxGuests / preRooms} per room × ${preRooms} rooms)` : ''}
+                      </p>
+                    </div>
+                    <span className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-full font-semibold flex-shrink-0">
+                      Locked
+                    </span>
+                  </div>
+
+                  {/* ── Adults & Children (capped to room capacity) ── */}
+                  <div className="grid grid-cols-2 gap-4">
                     {([
-                      { k: 'adults' as const,   label: 'Adults',   min: 1, max: 10, err: e1.adults },
-                      { k: 'children' as const, label: 'Children', min: 0, max: 10, err: null       },
-                      { k: 'rooms' as const,    label: 'Rooms',    min: 1, max: 2,  err: e1.rooms   },
+                      {
+                        k: 'adults' as const,
+                        label: 'Adults',
+                        min: 1,
+                        // max adults = total capacity minus children already selected
+                        max: Math.max(1, preMaxGuests - Number(form.children)),
+                        err: e1.adults,
+                        required: true,
+                        hint: `Min 1, max ${Math.max(1, preMaxGuests - Number(form.children))}`,
+                      },
+                      {
+                        k: 'children' as const,
+                        label: 'Children',
+                        min: 0,
+                        // max children = total capacity minus adults already selected
+                        max: Math.max(0, preMaxGuests - Number(form.adults)),
+                        err: null as FieldError,
+                        required: false,
+                        hint: `Max ${Math.max(0, preMaxGuests - Number(form.adults))}`,
+                      },
                     ]).map(f => (
-                      <F key={f.k} label={f.label} error={touched[f.k] ? f.err as FieldError : null} required={f.min > 0}>
+                      <F key={f.k} label={f.label} error={touched[f.k] ? f.err as FieldError : null} required={f.required}>
                         <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
                           <button type="button"
-                            onClick={() => { const v = Math.max(f.min, Number((form as any)[f.k]) - 1); setForm(p => ({ ...p, [f.k]: v })); setTouched(t => ({ ...t, [f.k]: true })) }}
+                            onClick={() => {
+                              const v = Math.max(f.min, Number((form as any)[f.k]) - 1)
+                              setForm(p => ({ ...p, [f.k]: v }))
+                              setTouched(t => ({ ...t, [f.k]: true }))
+                            }}
                             disabled={Number((form as any)[f.k]) <= f.min}
                             className="px-3 py-2.5 text-gray-500 hover:bg-gray-100 font-bold border-r border-gray-200 text-lg disabled:opacity-30 disabled:cursor-not-allowed">−</button>
-                          <span className="flex-1 text-center text-sm font-semibold py-2.5 bg-white">{(form as any)[f.k]}</span>
+                          <span className="flex-1 text-center text-sm font-semibold py-2.5 bg-white">
+                            {(form as any)[f.k]}
+                          </span>
                           <button type="button"
-                            onClick={() => { const v = Math.min(f.max, Number((form as any)[f.k]) + 1); setForm(p => ({ ...p, [f.k]: v })); setTouched(t => ({ ...t, [f.k]: true })) }}
+                            onClick={() => {
+                              const v = Math.min(f.max, Number((form as any)[f.k]) + 1)
+                              setForm(p => ({ ...p, [f.k]: v }))
+                              setTouched(t => ({ ...t, [f.k]: true }))
+                            }}
                             disabled={Number((form as any)[f.k]) >= f.max}
                             className="px-3 py-2.5 text-gray-500 hover:bg-gray-100 font-bold border-l border-gray-200 text-lg disabled:opacity-30 disabled:cursor-not-allowed">+</button>
                         </div>
-                        {f.k === 'rooms' && <p className="text-[10px] text-gray-400 mt-1 text-center">Max 2 rooms</p>}
+                        <p className="text-[10px] text-gray-400 mt-1 text-center">{f.hint}</p>
                       </F>
                     ))}
                   </div>
@@ -426,15 +477,20 @@ export default function BookingConfirm() {
                       className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none resize-none" />
                   </F>
 
-                  {/* Capacity info */}
+                  {/* Capacity info / warning */}
                   <div className={`rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${
-                    e1.capacity ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-blue-50 border border-blue-100 text-blue-700'
+                    e1.capacity ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-emerald-50 border border-emerald-100 text-emerald-700'
                   }`}>
                     <Users size={15} className="flex-shrink-0 mt-0.5" />
                     <div>
                       {e1.capacity
                         ? <span className="font-medium">{e1.capacity}</span>
-                        : <span>Room capacity: max <strong>{totalCapacity}</strong> guests for {form.rooms} room{Number(form.rooms) > 1 ? 's' : ''}</span>
+                        : <span>
+                            Total guests: <strong>{Number(form.adults) + Number(form.children)}</strong>
+                            {' '}/ <strong>{totalCapacity}</strong> capacity
+                            {Number(form.adults) + Number(form.children) < totalCapacity &&
+                              <span className="text-emerald-600"> ✓ Within capacity</span>}
+                          </span>
                       }
                     </div>
                   </div>
