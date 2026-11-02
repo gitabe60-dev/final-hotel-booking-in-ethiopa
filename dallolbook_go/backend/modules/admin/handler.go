@@ -610,12 +610,20 @@ func (h *Handler) UpdateBookingStatus(c *gin.Context) {
 // POST /api/admin/subadmin/managers
 func (h *Handler) CreateManager(c *gin.Context) {
 	adminID := c.GetInt("admin_id")
+	type pmEntry struct {
+		Method        string `json:"method"`
+		AccountName   string `json:"account_name"`
+		AccountNumber string `json:"account_number"`
+		PhoneNumber   string `json:"phone_number"`
+		Instructions  string `json:"instructions"`
+	}
 	var body struct {
-		FullName string `json:"full_name"`
-		Email    string `json:"email"`
-		Phone    string `json:"phone"`
-		Password string `json:"password"`
-		HotelID  int    `json:"hotel_id"`
+		FullName       string    `json:"full_name"`
+		Email          string    `json:"email"`
+		Phone          string    `json:"phone"`
+		Password       string    `json:"password"`
+		HotelID        int       `json:"hotel_id"`
+		PaymentMethods []pmEntry `json:"payment_methods"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil || body.Email == "" || body.Password == "" || body.HotelID == 0 {
 		utils.BadRequest(c, "full_name, email, password, hotel_id are required")
@@ -625,6 +633,13 @@ func (h *Handler) CreateManager(c *gin.Context) {
 	if err != nil {
 		utils.ServerError(c, "Failed to create hotel manager")
 		return
+	}
+	// Save payment methods passed in the same request (best-effort — don't fail if PM insert errors)
+	for _, pm := range body.PaymentMethods {
+		if pm.Method == "" {
+			continue
+		}
+		h.model.AddPaymentMethod(body.HotelID, pm.Method, pm.AccountName, pm.AccountNumber, pm.PhoneNumber, pm.Instructions)
 	}
 	utils.Created(c, "Hotel manager created.", gin.H{"id": id})
 }
