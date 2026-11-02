@@ -10,6 +10,68 @@ import HotelCard from '../../components/hotel/HotelCard'
 import Spinner from '../../components/shared/Spinner'
 import { hotelService, getCities } from '../../services/hotels'
 
+// ── Vertical-flip badge: alternates EN ↔ AM every 3 s ──────────────────────
+const BADGE_TEXTS = [
+  "Ethiopia's Premier Hotel Booking Platform",
+  'የኢትዮጵያ ቀዳሚ የሆቴል ቦኪንግ መድረክ',
+]
+
+function AnimatingBadge() {
+  const [idx, setIdx] = useState(0)
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      // Slide out → swap text → slide in
+      setVisible(false)
+      setTimeout(() => {
+        setIdx(i => (i + 1) % BADGE_TEXTS.length)
+        setVisible(true)
+      }, 350)
+    }, 3200)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex justify-center mb-6">
+      {/* Outer square-ish box */}
+      <div className="relative overflow-hidden bg-white/10 backdrop-blur-md border border-white/30 rounded-2xl px-6 py-3 shadow-lg shadow-black/20 min-w-[260px] max-w-sm text-center">
+        {/* Animated text */}
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={idx}
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0,  opacity: 1 }}
+            exit={{ y: -24, opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeInOut' }}
+            className={`block font-extrabold tracking-wide leading-tight text-white drop-shadow-sm ${
+              idx === 0 ? 'text-sm uppercase' : 'text-base'
+            }`}>
+            {idx === 0 && <span className="mr-1.5">✨</span>}
+            {BADGE_TEXTS[idx]}
+            {idx === 0 && <span className="ml-1.5">✨</span>}
+          </motion.span>
+        </AnimatePresence>
+
+        {/* Bottom accent line that shifts color */}
+        <motion.div
+          key={`line-${idx}`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className={`absolute bottom-0 left-0 right-0 h-0.5 origin-left ${
+            idx === 0 ? 'bg-amber-400' : 'bg-emerald-400'
+          }`}
+        />
+      </div>
+    </motion.div>
+  )
+}
+
 export default function Home() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -63,60 +125,6 @@ export default function Home() {
     <>
       <Navbar />
 
-      {/* ── Marquee announcement banner ─────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white overflow-hidden relative">
-        {/* Left + right fade masks */}
-        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-amber-500 to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-amber-500 to-transparent z-10 pointer-events-none" />
-
-        <div className="flex py-2.5 overflow-hidden">
-          {/* Duplicate the track twice so the loop is seamless */}
-          {[0, 1].map(track => (
-            <div
-              key={track}
-              className="flex items-center gap-0 flex-shrink-0 animate-marquee"
-              aria-hidden={track === 1}>
-              {[
-                { en: "Ethiopia's Premier Hotel Booking Platform",  am: 'የኢትዮጵያ ቀዳሚ የሆቴል ቦኪንግ መድረክ' },
-                { en: '🏨 Discover & Book Top Hotels',              am: '🏨 ምርጥ ሆቴሎችን ያግኙ እና ያስይዙ' },
-                { en: '⭐ Trusted by Thousands of Travelers',       am: '⭐ በሺዎች የተጠቃሚዎች አምነው' },
-                { en: '✅ Instant Booking Confirmation',             am: '✅ ፈጣን የቦኪንግ ማረጋገጫ' },
-                { en: '💳 Secure Ethiopian Payment Methods',         am: '💳 ደህንነቱ የተጠበቀ የኢትዮጵያ ክፍያ' },
-                { en: '📍 Hotels Across All Ethiopian Cities',       am: '📍 በሁሉም የኢትዮጵያ ከተሞች ሆቴሎች' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-3 mx-6 flex-shrink-0">
-                  {/* Square box with the text */}
-                  <div className="flex flex-col items-center bg-white/15 backdrop-blur-sm border border-white/25 rounded-lg px-4 py-1.5 min-w-max shadow-sm">
-                    <span className="text-xs font-extrabold tracking-wide uppercase leading-tight text-white drop-shadow">
-                      {item.en}
-                    </span>
-                    <span className="text-[11px] font-bold text-amber-100 leading-tight mt-0.5">
-                      {item.am}
-                    </span>
-                  </div>
-                  {/* Divider dot */}
-                  <span className="text-white/40 text-lg font-bold select-none">◆</span>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        {/* Keyframe style injected inline */}
-        <style>{`
-          @keyframes marquee {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-          .animate-marquee {
-            animation: marquee 38s linear infinite;
-          }
-          .animate-marquee:hover {
-            animation-play-state: paused;
-          }
-        `}</style>
-      </div>
-
       {/* ── Hero ─────────────────────────────────────── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white">
         <div className="absolute inset-0 opacity-10">
@@ -124,10 +132,9 @@ export default function Home() {
           <div className="absolute bottom-0 right-10 w-96 h-96 bg-indigo-300 rounded-full blur-3xl" />
         </div>
         <div className="relative max-w-5xl mx-auto text-center py-24 px-4">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-4 py-1.5 rounded-full text-sm mb-6">
-            <Sparkles size={15} /> {t('home.heroBadge')}
-          </motion.div>
+          {/* ── Vertical flip badge ── */}
+          <AnimatingBadge />
+
           <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight whitespace-pre-line">
             {t('home.heroTitle')}
