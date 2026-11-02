@@ -117,7 +117,7 @@ export default function Register() {
             <span className="text-white text-2xl font-extrabold">D</span>
           </div>
           <h1 className="text-2xl font-extrabold text-gray-900">Create Account</h1>
-          <p className="text-gray-500 text-sm mt-1">Join DallolBook and start booking</p>
+          <p className="text-gray-500 text-sm mt-1">Join Hotel Booking and start booking</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>

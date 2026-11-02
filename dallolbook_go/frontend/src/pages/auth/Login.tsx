@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 import { authService } from '../../services/auth'
 import { adminService } from '../../services/admin'
 import { useAuth } from '../../context/AuthContext'
-import { validateEmail, validatePassword, FieldError } from '../../utils/validate'
+import { validateEmail, FieldError } from '../../utils/validate'
 
 function Err({ msg }: { msg: FieldError }) {
   if (!msg) return null
@@ -45,7 +45,7 @@ export default function Login() {
   const blur = (k: 'email' | 'password') => () => setTouched(t => ({ ...t, [k]: true }))
 
   const errEmail = validateEmail(form.email)
-  const errPass  = validatePassword(form.password)
+  const errPass: FieldError = form.password.trim() === '' ? 'Password is required' : null
 
   const inputCls = (k: 'email' | 'password') => {
     const err = k === 'email' ? errEmail : errPass
@@ -101,7 +101,7 @@ export default function Login() {
           <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl">
             <span className="text-blue-600 text-3xl font-extrabold">D</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white">DallolBook</h1>
+          <h1 className="text-2xl font-extrabold text-white">Hotel Booking</h1>
           <p className="text-blue-200 text-sm mt-1">Ethiopia's Premier Hotel Booking</p>
         </div>
 
@@ -165,7 +165,7 @@ export default function Login() {
                     <div className="relative">
                       <Mail size={16} className="absolute left-3 top-3.5 text-gray-400" />
                       <input type="email" value={form.email} onChange={set('email')} onBlur={blur('email')}
-                        placeholder={tab === 'admin' ? 'admin@dallolbook.com' : 'you@email.com'}
+                        placeholder={tab === 'admin' ? 'admin@hotelbook.com' : 'you@email.com'}
                         className={inputCls('email')} />
                     </div>
                     <Err msg={touched.email ? errEmail : null} />
@@ -216,7 +216,7 @@ export default function Login() {
                   <div className="mt-6 space-y-3">
                     <div className="relative flex items-center gap-3 text-gray-300">
                       <div className="flex-1 h-px bg-gray-200" />
-                      <span className="text-xs text-gray-400 flex-shrink-0">New to DallolBook?</span>
+                      <span className="text-xs text-gray-400 flex-shrink-0">New to Hotel Booking?</span>
                       <div className="flex-1 h-px bg-gray-200" />
                     </div>
                     <Link to={`/register${hasRedirect ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
@@ -235,7 +235,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-blue-200/60 text-xs mt-4">
-          © 2026 DallolBook · Ethiopia Hotel Booking Platform
+          © 2026 Hotel Booking · Ethiopia Hotel Booking Platform
         </p>
       </motion.div>
     </div>

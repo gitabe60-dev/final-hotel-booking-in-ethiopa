@@ -1,5 +1,5 @@
 -- database/seed.sql
--- Idempotent seed data for DallolBook.
+-- Idempotent seed data for Hotel Booking.
 -- Safe to run multiple times — uses ON CONFLICT DO NOTHING.
 
 -- ─── Cities ──────────────────────────────────────────────────────────────────

@@ -59,7 +59,7 @@ export default function AdminLayout({ children, role }: Props) {
       `}>
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div>
-            <div className="font-bold text-lg">DallolBook</div>
+            <div className="font-bold text-lg">Hotel Booking</div>
             <div className="text-xs text-gray-400 mt-0.5 capitalize">{role.replace('_', ' ')}</div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white">

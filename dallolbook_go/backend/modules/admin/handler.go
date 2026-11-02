@@ -751,12 +751,12 @@ func (h *Handler) VerifyPayment(c *gin.Context) {
 
 		// Email notification
 		if email != "" {
-			subject := "DallolBook Payment Update"
+			subject := "Hotel Booking Payment Update"
 			var msg string
 			if body.Status == "approved" {
-				msg = "Dear " + guestName + ",\n\nYour payment for booking " + bookingInfo + " has been APPROVED. Your booking is now confirmed!\n\nThank you for choosing DallolBook."
+				msg = "Dear " + guestName + ",\n\nYour payment for booking " + bookingInfo + " has been APPROVED. Your booking is now confirmed!\n\nThank you for choosing Hotel Booking."
 			} else {
-				msg = "Dear " + guestName + ",\n\nYour payment for booking " + bookingInfo + " has been REJECTED. Please contact the hotel for more information or try a different payment method.\n\nThank you for choosing DallolBook."
+				msg = "Dear " + guestName + ",\n\nYour payment for booking " + bookingInfo + " has been REJECTED. Please contact the hotel for more information or try a different payment method.\n\nThank you for choosing Hotel Booking."
 			}
 			utils.SendEmailNotification(h.cfg, email, subject, msg)
 		}

@@ -24,7 +24,7 @@ func SendOTPEmail(cfg *config.Config, toEmail, otp string) error {
 	auth := smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPassword, cfg.SMTPHost)
 
 	msg := fmt.Sprintf(
-		"From: %s\r\nTo: %s\r\nSubject: Your DallolBook OTP Code\r\n\r\n"+
+		"From: %s\r\nTo: %s\r\nSubject: Your Hotel Booking OTP Code\r\n\r\n"+
 			"Your one-time password is: %s\r\n\r\nThis code expires in 5 minutes.\r\nDo not share it with anyone.",
 		cfg.SMTPFrom, toEmail, otp,
 	)

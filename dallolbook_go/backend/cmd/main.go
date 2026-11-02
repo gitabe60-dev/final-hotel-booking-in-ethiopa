@@ -47,7 +47,7 @@ func main() {
 
 	// 6. Health check
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok", "service": "dallolbook-api"})
+		c.JSON(200, gin.H{"status": "ok", "service": "hotel-booking-api"})
 	})
 
 	// 7. API v1 group
@@ -87,7 +87,7 @@ func main() {
 
 	// 9. Start server
 	addr := ":" + cfg.AppPort
-	log.Printf("[server] DallolBook API running on http://localhost%s", addr)
+	log.Printf("[server] Hotel Booking API running on http://localhost%s", addr)
 	if err := r.Run(addr); err != nil {
 		log.Fatalf("[server] Failed to start: %v", err)
 	}

@@ -38,12 +38,12 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">DallolBook Admin</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Hotel Booking Admin</h1>
           <p className="text-gray-500 mt-1 text-sm">Sign in to the admin panel</p>
         </div>
         <form onSubmit={submit} className="space-y-4">
           <Input label="Email" type="email" required value={form.email}
-            onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@dallolbook.com" />
+            onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="admin@hotelbook.com" />
           <Input label="Password" type="password" required value={form.password}
             onChange={e => setForm(f => ({ ...f, password: e.target.value }))} placeholder="••••••••" />
           <Button type="submit" fullWidth loading={loading}>Sign In</Button>
