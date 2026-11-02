@@ -63,8 +63,8 @@ export default function ManagerPaymentMethodsPage() {
 
   useEffect(() => { load() }, [])
 
-  const usedMethods = methods.map(m => m.method)
-  const available   = PM_OPTIONS.filter(o => !usedMethods.includes(o.value) || editing?.method === o.value)
+  // All 11 methods always available — multiple accounts per method allowed
+  const available = PM_OPTIONS
 
   const setField = (k: keyof typeof form, v: string | boolean) =>
     setForm(f => ({ ...f, [k]: v }))
@@ -155,8 +155,7 @@ export default function ManagerPaymentMethodsPage() {
               <RefreshCw size={14} /> Refresh
             </button>
             <button onClick={openAdd}
-              disabled={available.length === 0}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
               <Plus size={16} /> Add Payment Method
             </button>
           </div>
@@ -171,6 +170,7 @@ export default function ManagerPaymentMethodsPage() {
           <p className="text-xs text-blue-600 mt-0.5">
             When a guest books your hotel and goes to the payment step, they see all the methods you add here.
             They click the method they want (e.g. Telebirr) and see your <strong>phone number</strong> or <strong>account number</strong> to send payment to.
+            You can add <strong>multiple accounts</strong> for the same method (e.g. two Telebirr numbers).
           </p>
         </div>
       </div>
@@ -351,9 +351,7 @@ export default function ManagerPaymentMethodsPage() {
                         </button>
                       ))}
                     </div>
-                    {available.length === 0 && (
-                      <p className="text-gray-400 text-sm text-center py-4">All payment methods have been added.</p>
-                    )}
+
                   </div>
                 )}
 
