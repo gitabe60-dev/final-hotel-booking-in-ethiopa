@@ -115,8 +115,20 @@ export default function Register() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
-            <span className="text-white text-2xl font-extrabold">D</span>
+          <div className="relative inline-block mb-3">
+            <div className="w-14 h-14 bg-white rounded-2xl overflow-hidden mx-auto shadow-md border border-blue-100">
+              <img
+                src="https://hotelethiopia.com/wp-content/uploads/2025/10/WhatsApp-Image-2025-10-08-at-8.01.41-PM.png.webp"
+                alt="Hotel Ethiopia"
+                className="w-full h-full object-cover"
+                onError={e => {
+                  const img = e.target as HTMLImageElement
+                  img.style.display = 'none'
+                  const p = img.parentElement
+                  if (p) p.innerHTML = '<div class="w-full h-full bg-blue-600 flex items-center justify-center"><span class="text-white text-2xl font-extrabold">H</span></div>'
+                }}
+              />
+            </div>
           </div>
           <h1 className="text-2xl font-extrabold text-gray-900">{t('register.title')}</h1>
           <p className="text-gray-500 text-sm mt-1">{t('register.subtitle')}</p>

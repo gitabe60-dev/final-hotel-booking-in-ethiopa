@@ -26,7 +26,18 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-        <Link to="/" className="text-2xl font-bold text-blue-600 flex-shrink-0">{t('nav.brand')}</Link>
+        {/* Brand — logo image + text */}
+        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm border border-blue-100 flex-shrink-0 transition-transform group-hover:scale-105">
+            <img
+              src="https://hotelethiopia.com/wp-content/uploads/2025/10/WhatsApp-Image-2025-10-08-at-8.01.41-PM.png.webp"
+              alt="Hotel Ethiopia"
+              className="w-full h-full object-cover"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          </div>
+          <span className="text-xl font-extrabold text-blue-600 leading-tight">{t('nav.brand')}</span>
+        </Link>
 
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-4 flex-1 justify-end">

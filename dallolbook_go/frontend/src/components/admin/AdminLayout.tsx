@@ -59,9 +59,24 @@ export default function AdminLayout({ children, role }: Props) {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <div>
-            <div className="font-bold text-lg">Hotel Booking</div>
-            <div className="text-xs text-gray-400 mt-0.5 capitalize">{role.replace('_', ' ')}</div>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 border border-gray-600">
+              <img
+                src="https://hotelethiopia.com/wp-content/uploads/2025/10/WhatsApp-Image-2025-10-08-at-8.01.41-PM.png.webp"
+                alt="logo"
+                className="w-full h-full object-cover"
+                onError={e => {
+                  const img = e.target as HTMLImageElement
+                  img.style.display = 'none'
+                  const p = img.parentElement
+                  if (p) p.innerHTML = '<div class="w-full h-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">H</div>'
+                }}
+              />
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold text-sm leading-tight truncate">Hotel Booking</div>
+              <div className="text-xs text-gray-400 capitalize truncate">{role.replace('_', ' ')}</div>
+            </div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white">
             <X size={20} />

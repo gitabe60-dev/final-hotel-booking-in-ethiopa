@@ -100,8 +100,24 @@ export default function Login() {
 
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl">
-            <span className="text-blue-600 text-3xl font-extrabold">D</span>
+          {/* Hotel Ethiopia logo with glow effect */}
+          <div className="relative inline-block mb-3">
+            <div className="absolute inset-0 bg-blue-500/30 rounded-2xl blur-xl scale-110" />
+            <div className="relative w-20 h-20 bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-white/40 mx-auto">
+              <img
+                src="https://hotelethiopia.com/wp-content/uploads/2025/10/WhatsApp-Image-2025-10-08-at-8.01.41-PM.png.webp"
+                alt="Hotel Ethiopia"
+                className="w-full h-full object-cover"
+                onError={e => {
+                  const img = e.target as HTMLImageElement
+                  img.style.display = 'none'
+                  const parent = img.parentElement
+                  if (parent) {
+                    parent.innerHTML = '<div class="w-full h-full flex items-center justify-center"><span class="text-blue-600 text-4xl font-extrabold">H</span></div>'
+                  }
+                }}
+              />
+            </div>
           </div>
           <h1 className="text-2xl font-extrabold text-white">{t('login.title')}</h1>
           <p className="text-blue-200 text-sm mt-1">{t('login.subtitle')}</p>
