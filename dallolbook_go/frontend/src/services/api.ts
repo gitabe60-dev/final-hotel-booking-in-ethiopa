@@ -13,11 +13,13 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// On 401 redirect to login
+// On 401: only redirect if it's NOT a login/auth request (expired session)
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const url = err.config?.url || ''
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/otp')
+    if (err.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/login'
@@ -40,10 +42,13 @@ adminApi.interceptors.request.use((config) => {
   return config
 })
 
+// On 401: only redirect if it's NOT the login endpoint itself (expired session)
 adminApi.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const url = err.config?.url || ''
+    const isLoginEndpoint = url.includes('/login')
+    if (err.response?.status === 401 && !isLoginEndpoint) {
       localStorage.removeItem('admin_token')
       window.location.href = '/login'
     }
