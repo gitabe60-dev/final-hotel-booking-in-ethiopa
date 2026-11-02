@@ -63,6 +63,60 @@ export default function Home() {
     <>
       <Navbar />
 
+      {/* ── Marquee announcement banner ─────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-white overflow-hidden relative">
+        {/* Left + right fade masks */}
+        <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-amber-500 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-amber-500 to-transparent z-10 pointer-events-none" />
+
+        <div className="flex py-2.5 overflow-hidden">
+          {/* Duplicate the track twice so the loop is seamless */}
+          {[0, 1].map(track => (
+            <div
+              key={track}
+              className="flex items-center gap-0 flex-shrink-0 animate-marquee"
+              aria-hidden={track === 1}>
+              {[
+                { en: "Ethiopia's Premier Hotel Booking Platform",  am: 'የኢትዮጵያ ቀዳሚ የሆቴል ቦኪንግ መድረክ' },
+                { en: '🏨 Discover & Book Top Hotels',              am: '🏨 ምርጥ ሆቴሎችን ያግኙ እና ያስይዙ' },
+                { en: '⭐ Trusted by Thousands of Travelers',       am: '⭐ በሺዎች የተጠቃሚዎች አምነው' },
+                { en: '✅ Instant Booking Confirmation',             am: '✅ ፈጣን የቦኪንግ ማረጋገጫ' },
+                { en: '💳 Secure Ethiopian Payment Methods',         am: '💳 ደህንነቱ የተጠበቀ የኢትዮጵያ ክፍያ' },
+                { en: '📍 Hotels Across All Ethiopian Cities',       am: '📍 በሁሉም የኢትዮጵያ ከተሞች ሆቴሎች' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 mx-6 flex-shrink-0">
+                  {/* Square box with the text */}
+                  <div className="flex flex-col items-center bg-white/15 backdrop-blur-sm border border-white/25 rounded-lg px-4 py-1.5 min-w-max shadow-sm">
+                    <span className="text-xs font-extrabold tracking-wide uppercase leading-tight text-white drop-shadow">
+                      {item.en}
+                    </span>
+                    <span className="text-[11px] font-bold text-amber-100 leading-tight mt-0.5">
+                      {item.am}
+                    </span>
+                  </div>
+                  {/* Divider dot */}
+                  <span className="text-white/40 text-lg font-bold select-none">◆</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Keyframe style injected inline */}
+        <style>{`
+          @keyframes marquee {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-marquee {
+            animation: marquee 38s linear infinite;
+          }
+          .animate-marquee:hover {
+            animation-play-state: paused;
+          }
+        `}</style>
+      </div>
+
       {/* ── Hero ─────────────────────────────────────── */}
       <div className="relative overflow-hidden bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-700 text-white">
         <div className="absolute inset-0 opacity-10">
