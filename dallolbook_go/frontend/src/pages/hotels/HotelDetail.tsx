@@ -1,14 +1,15 @@
 // pages/hotels/HotelDetail.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MapPin, Heart, Check, MessageSquare, Star,
-  Calendar, Bed, ChevronRight, Wifi,
+  Calendar, Bed, ChevronRight, ChevronLeft, Wifi,
   Coffee, Car, Waves, Dumbbell, UtensilsCrossed,
-  Users, Lock, Clock, Plus, Minus
+  Users, Lock, Clock, Plus, Minus, X, ZoomIn, Image
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { useHotel } from '../../hooks/useHotels'
 import { hotelService } from '../../services/hotels'
 import { wishlistService } from '../../services/wishlist'
@@ -31,12 +32,15 @@ const AMENITY_ICONS: Record<string, any> = {
 interface RoomQty { room: any; qty: number }
 
 export default function HotelDetail() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const { hotel, loading } = useHotel(Number(id))
 
   const [activeImg, setActiveImg]   = useState(0)
+  const [lightbox, setLightbox]     = useState(false)   // full-screen lightbox
+  const [slideDir, setSlideDir]     = useState(1)       // 1=next, -1=prev
   const [wishlisted, setWishlisted] = useState(false)
   const [reviews, setReviews]       = useState<any[]>([])
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
@@ -167,25 +171,215 @@ export default function HotelDetail() {
   const availableRooms = allRooms.filter(r => !r.is_occupied && r.room_status === 'available')
   const occupiedRooms  = allRooms.filter(r => r.is_occupied || r.room_status !== 'available')
 
+  // Gallery helpers
+  const goNext = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setSlideDir(1)
+    setActiveImg(i => (i + 1) % images.length)
+  }, [images.length])
+
+  const goPrev = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    setSlideDir(-1)
+    setActiveImg(i => (i - 1 + images.length) % images.length)
+  }, [images.length])
+
+  const goTo = (i: number) => {
+    setSlideDir(i > activeImg ? 1 : -1)
+    setActiveImg(i)
+  }
+
+  // Keyboard nav for lightbox
+  useEffect(() => {
+    if (!lightbox) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') goNext()
+      if (e.key === 'ArrowLeft')  goPrev()
+      if (e.key === 'Escape')     setLightbox(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [lightbox, goNext, goPrev])
+
   return (
     <>
+      {/* ── Lightbox ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center"
+            onClick={() => setLightbox(false)}>
+            {/* Close */}
+            <button onClick={() => setLightbox(false)}
+              className="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10">
+              <X size={24} />
+            </button>
+            {/* Counter */}
+            <p className="absolute top-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
+              {activeImg + 1} / {images.length}
+            </p>
+            {/* Main image with slide animation */}
+            <div className="w-full max-w-5xl px-16 relative" onClick={e => e.stopPropagation()}>
+              <AnimatePresence mode="wait" custom={slideDir}>
+                <motion.img
+                  key={activeImg}
+                  custom={slideDir}
+                  variants={{
+                    enter: (d: number) => ({ x: d > 0 ? 200 : -200, opacity: 0 }),
+                    center: { x: 0, opacity: 1 },
+                    exit: (d: number) => ({ x: d > 0 ? -200 : 200, opacity: 0 }),
+                  }}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  src={images[activeImg]}
+                  alt={`${hotel.name} ${activeImg + 1}`}
+                  className="w-full max-h-[70vh] object-contain rounded-xl"
+                />
+              </AnimatePresence>
+              {/* Prev / Next arrows */}
+              {images.length > 1 && (
+                <>
+                  <button onClick={goPrev}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-all backdrop-blur-sm">
+                    <ChevronLeft size={24} />
+                  </button>
+                  <button onClick={goNext}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/25 text-white p-3 rounded-full transition-all backdrop-blur-sm">
+                    <ChevronRight size={24} />
+                  </button>
+                </>
+              )}
+            </div>
+            {/* Thumbnail strip */}
+            {images.length > 1 && (
+              <div className="flex gap-2 mt-4 px-4 overflow-x-auto max-w-full pb-2" onClick={e => e.stopPropagation()}>
+                {images.map((img: string, i: number) => (
+                  <motion.button
+                    key={i}
+                    onClick={() => goTo(i)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                      i === activeImg ? 'border-white shadow-lg shadow-white/20' : 'border-transparent opacity-50 hover:opacity-80'
+                    }`}>
+                    <img src={img} alt="" className="w-full h-full object-cover" />
+                  </motion.button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Navbar />
       <div className="max-w-6xl mx-auto px-4 py-8">
 
-        {/* Gallery */}
-        <div className="grid grid-cols-3 gap-2 h-72 rounded-2xl overflow-hidden mb-8">
-          <div className="col-span-2 relative">
-            <img src={images[activeImg]} alt={hotel.name} className="w-full h-full object-cover" />
+        {/* ── Gallery ─────────────────────────────────────────────────── */}
+        <div className="relative mb-8 rounded-2xl overflow-hidden group">
+          {/* Main image with slide animation */}
+          <div className="relative h-80 md:h-[420px] overflow-hidden cursor-zoom-in" onClick={() => setLightbox(true)}>
+            <AnimatePresence mode="wait" custom={slideDir}>
+              <motion.img
+                key={activeImg}
+                custom={slideDir}
+                variants={{
+                  enter: (d: number) => ({ x: d > 0 ? 120 : -120, opacity: 0 }),
+                  center: { x: 0, opacity: 1 },
+                  exit: (d: number) => ({ x: d > 0 ? -120 : 120, opacity: 0 }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.4, ease: 'easeInOut' }}
+                src={images[activeImg]}
+                alt={hotel.name}
+                className="w-full h-full object-cover absolute inset-0"
+              />
+            </AnimatePresence>
+
+            {/* Gradient overlays */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent pointer-events-none" />
+
+            {/* Featured badge */}
             {hotel.is_featured && (
-              <span className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">★ Featured</span>
+              <motion.span
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.3, type: 'spring' }}
+                className="absolute top-4 left-4 bg-amber-500 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-lg">
+                ★ {t('detail.featured')}
+              </motion.span>
+            )}
+
+            {/* Image counter */}
+            <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5">
+              <Image size={12} /> {activeImg + 1} / {images.length}
+            </div>
+
+            {/* Zoom hint */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="absolute bottom-4 right-4 bg-black/40 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ZoomIn size={12} /> Click to expand
+            </motion.div>
+
+            {/* Prev/Next on main image */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={e => { e.stopPropagation(); goPrev() }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/55 text-white p-2.5 rounded-full transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100">
+                  <ChevronLeft size={20} />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); goNext() }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/55 text-white p-2.5 rounded-full transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100">
+                  <ChevronRight size={20} />
+                </button>
+              </>
             )}
           </div>
-          <div className="grid grid-rows-3 gap-2">
-            {images.slice(0, 3).map((img: string, i: number) => (
-              <img key={i} src={img} alt="" onClick={() => setActiveImg(i)}
-                className={`w-full h-full object-cover cursor-pointer transition-all ${activeImg === i ? 'ring-2 ring-blue-500' : 'opacity-80 hover:opacity-100'}`} />
-            ))}
-          </div>
+
+          {/* Thumbnail strip below main image */}
+          {images.length > 1 && (
+            <div className="flex gap-2 mt-2">
+              {images.map((img: string, i: number) => (
+                <motion.button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className={`flex-shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all duration-200 ${
+                    i === activeImg
+                      ? 'border-blue-500 shadow-md shadow-blue-200 opacity-100'
+                      : 'border-gray-200 opacity-60 hover:opacity-90'
+                  }`}>
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </motion.button>
+              ))}
+            </div>
+          )}
+
+          {/* Dot indicators for mobile */}
+          {images.length > 1 && (
+            <div className="flex justify-center gap-1.5 mt-3 md:hidden">
+              {images.map((_: string, i: number) => (
+                <button key={i} onClick={() => goTo(i)}
+                  className={`rounded-full transition-all duration-200 ${
+                    i === activeImg ? 'w-5 h-2 bg-blue-600' : 'w-2 h-2 bg-gray-300'
+                  }`} />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -222,7 +416,7 @@ export default function HotelDetail() {
             {/* Description */}
             {hotel.description && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <h2 className="font-semibold text-gray-800 mb-2">About this hotel</h2>
+                <h2 className="font-semibold text-gray-800 mb-2">{t('detail.about')}</h2>
                 <p className="text-gray-600 leading-relaxed text-sm">{hotel.description}</p>
               </div>
             )}
@@ -230,7 +424,7 @@ export default function HotelDetail() {
             {/* Amenities */}
             {hotel.amenities?.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <h2 className="font-semibold text-gray-800 mb-3">Amenities</h2>
+                <h2 className="font-semibold text-gray-800 mb-3">{t('detail.amenities')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {hotel.amenities.map((a: string) => {
                     const Icon = AMENITY_ICONS[a] || Check
@@ -244,29 +438,29 @@ export default function HotelDetail() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="p-5 border-b border-gray-100 flex items-center gap-2">
                 <Bed size={20} className="text-blue-600" />
-                <h2 className="font-semibold text-gray-800">Select Rooms</h2>
+                <h2 className="font-semibold text-gray-800">{t('detail.selectRooms')}</h2>
               </div>
 
               {/* Date pickers */}
               <div className="px-5 py-4 bg-blue-50 border-b border-blue-100">
                 <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2 flex items-center gap-1">
-                  <Calendar size={13} /> Select dates to check availability
+                  <Calendar size={13} /> {t('detail.checkDates')}
                 </p>
                 <div className="flex gap-3 flex-wrap items-end">
                   <div>
-                    <label className="block text-xs text-blue-600 mb-1">Check-in</label>
+                    <label className="block text-xs text-blue-600 mb-1">{t('detail.checkIn')}</label>
                     <input type="date" value={checkIn} min={today()} max={checkOut}
                       onChange={e => setCheckIn(e.target.value)}
                       className="border border-blue-200 bg-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
                   </div>
                   <div>
-                    <label className="block text-xs text-blue-600 mb-1">Check-out</label>
+                    <label className="block text-xs text-blue-600 mb-1">{t('detail.checkOut')}</label>
                     <input type="date" value={checkOut} min={checkIn}
                       onChange={e => setCheckOut(e.target.value)}
                       className="border border-blue-200 bg-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
                   </div>
                   <div className="bg-blue-600 text-white text-xs px-4 py-2 rounded-lg font-semibold">
-                    {nights} night{nights > 1 ? 's' : ''}
+                    {nights} {nights > 1 ? t('detail.nights') : t('detail.night')}
                   </div>
                 </div>
               </div>
@@ -275,13 +469,13 @@ export default function HotelDetail() {
                 {roomsLoading ? (
                   <div className="flex items-center justify-center py-8 gap-2 text-gray-400 text-sm">
                     <div className="w-5 h-5 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
-                    Checking room availability…
+                    {t('detail.checking')}
                   </div>
                 ) : allRooms.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-4xl mb-2">😔</div>
-                    <p className="text-gray-600 font-medium">No rooms configured</p>
-                    <p className="text-gray-400 text-sm mt-1">Try different dates</p>
+                    <p className="text-gray-600 font-medium">{t('detail.noRooms')}</p>
+                    <p className="text-gray-400 text-sm mt-1">{t('detail.tryDates')}</p>
                   </div>
                 ) : (
                   <>
@@ -290,7 +484,7 @@ export default function HotelDetail() {
                       <div className="space-y-3">
                         <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide flex items-center gap-1.5">
                           <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block" />
-                          {availableRooms.length} room{availableRooms.length > 1 ? 's' : ''} available — tap to select
+                          {availableRooms.length} {t('detail.tapSelect')}
                         </p>
                         {availableRooms.map((room: any) => {
                           const qty     = roomQty[room.id] || 0
@@ -332,7 +526,7 @@ export default function HotelDetail() {
                                       <h3 className={`font-bold text-base ${isActive ? 'text-blue-700' : 'text-gray-800'}`}>{room.name}</h3>
                                       <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
                                         <span className="flex items-center gap-1">🛏️ {room.bed_type}</span>
-                                        <span className="flex items-center gap-1"><Users size={11} /> max {room.max_guests}</span>
+                                        <span className="flex items-center gap-1"><Users size={11} /> {t('detail.maxGuests')} {room.max_guests}</span>
                                         {room.size_sqm > 0 && <span>📐 {room.size_sqm}m²</span>}
                                       </div>
                                     </div>
@@ -350,14 +544,14 @@ export default function HotelDetail() {
                                   <div className="flex items-center justify-between mt-2">
                                     <div>
                                       <span className={`text-xl font-extrabold ${isActive ? 'text-blue-600' : 'text-gray-800'}`}>
-                                        ETB {room.price_per_night?.toLocaleString()}
+                                        {t('common.etb')} {room.price_per_night?.toLocaleString()}
                                       </span>
-                                      <span className="text-gray-400 text-xs ml-1">/night</span>
+                                      <span className="text-gray-400 text-xs ml-1">{t('common.perNight')}</span>
                                     </div>
                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                                       isActive ? 'bg-blue-600 text-white' : 'bg-emerald-100 text-emerald-700'
                                     }`}>
-                                      {isActive ? '✓ Selected' : '✓ Available'}
+                                      {isActive ? t('detail.selected') : t('detail.selectLabel')}
                                     </span>
                                   </div>
 
@@ -371,11 +565,11 @@ export default function HotelDetail() {
                                         className="overflow-hidden">
                                         <div className="flex items-center justify-between mt-3 pt-3 border-t border-blue-200">
                                           <div className="text-xs text-blue-600 font-semibold">
-                                            {qty} room{qty > 1 ? 's' : ''} × {nights} night{nights > 1 ? 's' : ''} =
-                                            <span className="text-blue-700 font-extrabold ml-1">ETB {rTotal.toLocaleString()}</span>
+                                            {qty} {qty > 1 ? t('detail.nights') : t('detail.night')} × {nights} {nights > 1 ? t('detail.nights') : t('detail.night')} =
+                                            <span className="text-blue-700 font-extrabold ml-1">{t('common.etb')} {rTotal.toLocaleString()}</span>
                                           </div>
                                           <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                            <span className="text-xs text-blue-500">Qty:</span>
+                                            <span className="text-xs text-blue-500">{t('detail.qty')}</span>
                                             <button
                                               onClick={() => { if (qty > 1) setRoomQty(q => ({ ...q, [room.id]: qty - 1 })) }}
                                               disabled={qty <= 1}
@@ -405,7 +599,7 @@ export default function HotelDetail() {
                     {/* Occupied rooms — shown grayed out with checkout date */}
                     {occupiedRooms.length > 0 && (
                       <div className="space-y-2 mt-5">
-                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Not Available for These Dates</p>
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('detail.notAvailable')}</p>
                         {occupiedRooms.map((room: any) => (
                           <div key={room.id}
                             className="border border-gray-200 rounded-xl p-3 bg-gray-50 opacity-75">
@@ -423,10 +617,10 @@ export default function HotelDetail() {
                                 {room.is_occupied ? (
                                   <div>
                                     <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                                      <Lock size={10} /> Reserved
+                                      <Lock size={10} /> {t('detail.reserved')}
                                     </span>
                                     <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
-                                      <Clock size={10} /> Until {room.occupied_until}
+                                      <Clock size={10} /> {t('detail.until')} {room.occupied_until}
                                     </p>
                                   </div>
                                 ) : (
@@ -446,7 +640,7 @@ export default function HotelDetail() {
             {/* Google Maps */}
             {hotel.latitude !== 0 && hotel.longitude !== 0 && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><MapPin size={18} className="text-blue-600" /> Location</h2>
+                <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2"><MapPin size={18} className="text-blue-600" /> {t('detail.location')}</h2>
                 <div className="rounded-xl overflow-hidden border border-gray-200">
                   <iframe width="100%" height="260" style={{ border: 0 }} loading="lazy"
                     title={`Map of ${hotel.name}`}
@@ -460,12 +654,12 @@ export default function HotelDetail() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <MessageSquare size={18} className="text-blue-600" /> Guest Reviews
+                  <MessageSquare size={18} className="text-blue-600" /> {t('detail.reviews')}
                   <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{hotel.review_count}</span>
                 </h2>
                 <button onClick={() => setShowReviewForm(!showReviewForm)}
                   className="text-blue-600 text-sm font-medium hover:text-blue-800">
-                  {showReviewForm ? 'Cancel' : '+ Write review'}
+                  {showReviewForm ? t('detail.cancelReview') : t('detail.writeReview')}
                 </button>
               </div>
               <AnimatePresence>
@@ -480,17 +674,17 @@ export default function HotelDetail() {
                       ))}
                     </div>
                     <textarea value={reviewForm.comment} onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
-                      rows={3} placeholder="Share your experience…"
+                      rows={3} placeholder={t('detail.shareExp')}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
                     <button onClick={submitReview} disabled={submittingReview}
                       className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-                      {submittingReview ? 'Posting…' : 'Post Review'}
+                      {submittingReview ? t('detail.posting') : t('detail.postReview')}
                     </button>
                   </motion.div>
                 )}
               </AnimatePresence>
               {reviews.length === 0 ? (
-                <p className="text-gray-400 text-sm py-6 text-center">No reviews yet — be the first!</p>
+                <p className="text-gray-400 text-sm py-6 text-center">{t('detail.noReviews')}</p>
               ) : (
                 <div className="space-y-4">
                   {reviews.map((rev: any) => (
@@ -520,22 +714,22 @@ export default function HotelDetail() {
             <div className="sticky top-24 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
               {/* Header */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4 text-white">
-                <p className="text-blue-100 text-xs">Starting from</p>
-                <p className="text-3xl font-bold">ETB {hotel.price_per_night?.toLocaleString()}<span className="text-lg font-normal text-blue-200">/night</span></p>
+                <p className="text-blue-100 text-xs">{t('detail.startingFrom')}</p>
+                <p className="text-3xl font-bold">{t('common.etb')} {hotel.price_per_night?.toLocaleString()}<span className="text-lg font-normal text-blue-200">{t('common.perNight')}</span></p>
               </div>
 
               <div className="p-5 space-y-4">
                 {/* Date summary */}
                 <div className="flex justify-between text-sm bg-gray-50 rounded-lg p-3">
-                  <div><p className="text-xs text-gray-400">Check-in</p><p className="font-semibold text-gray-800">{checkIn}</p></div>
-                  <div className="text-center"><p className="text-xs text-gray-400">Nights</p><p className="font-semibold text-blue-600">{nights}</p></div>
-                  <div className="text-right"><p className="text-xs text-gray-400">Check-out</p><p className="font-semibold text-gray-800">{checkOut}</p></div>
+                  <div><p className="text-xs text-gray-400">{t('detail.checkIn')}</p><p className="font-semibold text-gray-800">{checkIn}</p></div>
+                  <div className="text-center"><p className="text-xs text-gray-400">{nights > 1 ? t('detail.nights') : t('detail.night')}</p><p className="font-semibold text-blue-600">{nights}</p></div>
+                  <div className="text-right"><p className="text-xs text-gray-400">{t('detail.checkOut')}</p><p className="font-semibold text-gray-800">{checkOut}</p></div>
                 </div>
 
                 {/* Selected rooms summary */}
                 {selectedRooms.length > 0 ? (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Selected</p>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('detail.selected')}</p>
                     {selectedRooms.map(({ room, qty }) => (
                       <div key={room.id} className="flex justify-between text-sm">
                         <span className="text-gray-700">{qty}× {room.name}</span>
@@ -543,18 +737,18 @@ export default function HotelDetail() {
                       </div>
                     ))}
                     <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-100">
-                      <span>Total</span>
-                      <span className="text-blue-600">ETB {totalPrice.toLocaleString()}</span>
+                      <span>{t('detail.total')}</span>
+                      <span className="text-blue-600">{t('common.etb')} {totalPrice.toLocaleString()}</span>
                     </div>
                     <div className="text-xs text-gray-400 text-center">
-                      {totalRooms} room{totalRooms > 1 ? 's' : ''} · max {maxCapacity} guests total
+                      {totalRooms} {totalRooms > 1 ? t('detail.nights') : t('detail.night')} · {t('detail.maxGuests')} {maxCapacity}
                     </div>
                   </div>
                 ) : (
                   <div className="text-center py-3 text-gray-400 text-sm">
                     {availableRooms.length === 0 && !roomsLoading
-                      ? 'No rooms available for these dates'
-                      : 'Use + to select rooms below'}
+                      ? t('detail.noRooms')
+                      : t('detail.selectRoom')}
                   </div>
                 )}
 
@@ -563,18 +757,18 @@ export default function HotelDetail() {
                   disabled={selectedRooms.length === 0 || roomsLoading}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-base hover:bg-blue-700 active:scale-[.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md">
                   {selectedRooms.length === 0
-                    ? '← Select a Room'
-                    : `Book ${totalRooms} Room${totalRooms > 1 ? 's' : ''} →`}
+                    ? t('detail.selectRoom')
+                    : `${t('detail.bookRooms')} ${totalRooms} →`}
                 </button>
 
                 {!isAuthenticated && selectedRooms.length > 0 && (
-                  <p className="text-center text-xs text-gray-400">You'll be asked to sign in to continue</p>
+                  <p className="text-center text-xs text-gray-400">{t('detail.signInCont')}</p>
                 )}
 
                 {/* Quick stats */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-                  <div className="text-center"><p className="text-xs text-gray-400">Rating</p><p className="font-bold text-gray-800 flex items-center justify-center gap-1"><Star size={13} className="text-amber-500 fill-amber-500" /> {hotel.rating}</p></div>
-                  <div className="text-center"><p className="text-xs text-gray-400">Reviews</p><p className="font-bold text-gray-800">{hotel.review_count}</p></div>
+                  <div className="text-center"><p className="text-xs text-gray-400">{t('detail.rating')}</p><p className="font-bold text-gray-800 flex items-center justify-center gap-1"><Star size={13} className="text-amber-500 fill-amber-500" /> {hotel.rating}</p></div>
+                  <div className="text-center"><p className="text-xs text-gray-400">{t('detail.reviews')}</p><p className="font-bold text-gray-800">{hotel.review_count}</p></div>
                 </div>
               </div>
             </div>
@@ -606,7 +800,7 @@ export default function HotelDetail() {
               <button
                 onClick={handleBook}
                 className="flex-shrink-0 bg-blue-600 text-white px-7 py-3 rounded-xl font-bold text-base hover:bg-blue-700 active:scale-[.97] transition-all shadow-lg shadow-blue-200 flex items-center gap-2">
-                Book Now <ChevronRight size={20} />
+                {t('detail.bookNow')} <ChevronRight size={20} />
               </button>
             </div>
           </motion.div>

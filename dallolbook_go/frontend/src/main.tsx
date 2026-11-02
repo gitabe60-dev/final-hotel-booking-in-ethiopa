@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './context/AuthContext'
+import './i18n/index'   // initialise i18next (must be imported before App renders)
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, MapPin, Star, ArrowRight, Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import Navbar from '../../components/shared/Navbar'
 import Footer from '../../components/shared/Footer'
 import HotelCard from '../../components/hotel/HotelCard'
@@ -10,14 +11,15 @@ import Spinner from '../../components/shared/Spinner'
 import { hotelService, getCities } from '../../services/hotels'
 
 export default function Home() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
-  const [featured, setFeatured] = useState<any[]>([])
-  const [allHotels, setAllHotels] = useState<any[]>([])
-  const [cities, setCities] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [featured, setFeatured]       = useState<any[]>([])
+  const [allHotels, setAllHotels]     = useState<any[]>([])
+  const [cities, setCities]           = useState<any[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [search, setSearch]           = useState('')
   const [selectedCity, setSelectedCity] = useState('')
-  const [cityHotels, setCityHotels] = useState<any[]>([])
+  const [cityHotels, setCityHotels]   = useState<any[]>([])
   const [cityLoading, setCityLoading] = useState(false)
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export default function Home() {
 
   const handleSearch = () => {
     const params = new URLSearchParams()
-    if (search) params.set('name', search)
+    if (search)       params.set('name', search)
     if (selectedCity) params.set('city', selectedCity)
     navigate(`/hotels?${params.toString()}`)
   }
@@ -70,15 +72,15 @@ export default function Home() {
         <div className="relative max-w-5xl mx-auto text-center py-24 px-4">
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 bg-white/20 backdrop-blur px-4 py-1.5 rounded-full text-sm mb-6">
-            <Sparkles size={15} /> Ethiopia's Premier Hotel Booking Platform
+            <Sparkles size={15} /> {t('home.heroBadge')}
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight">
-            Discover Ethiopia's<br />Best Hotels
+            className="text-4xl md:text-6xl font-extrabold mb-4 leading-tight whitespace-pre-line">
+            {t('home.heroTitle')}
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
             className="text-blue-100 text-lg mb-10">
-            From Addis Ababa to Bahir Dar — find and book your perfect stay in seconds.
+            {t('home.heroSub')}
           </motion.p>
 
           {/* Search bar */}
@@ -88,14 +90,14 @@ export default function Home() {
               <Search size={20} className="absolute left-3 top-3 text-gray-400" />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search hotel name..."
+                placeholder={t('home.searchName')}
                 className="w-full pl-10 pr-4 py-3 rounded-xl text-gray-900 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none shadow-lg" />
             </div>
             <div className="relative">
               <MapPin size={18} className="absolute left-3 top-3.5 text-gray-400" />
-              <select value={selectedCity} onChange={e => { setSelectedCity(e.target.value) }}
+              <select value={selectedCity} onChange={e => setSelectedCity(e.target.value)}
                 className="pl-9 pr-4 py-3 rounded-xl text-gray-900 text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none shadow-lg appearance-none bg-white min-w-[160px]">
-                <option value="">All Cities</option>
+                <option value="">{t('home.allCities')}</option>
                 {cities.map((c: any) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
@@ -103,7 +105,7 @@ export default function Home() {
             </div>
             <button onClick={handleSearch}
               className="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-6 py-3 rounded-xl font-semibold text-sm shadow-lg transition-all">
-              Search Hotels
+              {t('home.searchBtn')}
             </button>
           </motion.div>
         </div>
@@ -114,10 +116,10 @@ export default function Home() {
         <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
           className="flex items-center gap-2 mb-8">
           <Star size={22} className="text-amber-500 fill-amber-500" />
-          <h2 className="text-2xl font-bold text-gray-900">Featured Hotels</h2>
+          <h2 className="text-2xl font-bold text-gray-900">{t('home.featured')}</h2>
         </motion.div>
         {loading ? <Spinner /> : featured.length === 0 ? (
-          <p className="text-gray-400 text-center py-8">No featured hotels available.</p>
+          <p className="text-gray-400 text-center py-8">{t('home.noFeatured')}</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {featured.map((h, i) => (
@@ -137,21 +139,21 @@ export default function Home() {
             className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div className="flex items-center gap-2">
               <MapPin size={22} className="text-blue-600" />
-              <h2 className="text-2xl font-bold text-gray-900">Browse by City</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t('home.browseCity')}</h2>
             </div>
             <button onClick={() => navigate('/hotels')}
               className="flex items-center gap-2 text-blue-600 text-sm font-medium hover:text-blue-800">
-              View All Hotels <ArrowRight size={16} />
+              {t('home.viewAll')} <ArrowRight size={16} />
             </button>
           </motion.div>
 
-          {/* City filter chips from API */}
+          {/* City filter chips */}
           <div className="flex flex-wrap gap-2 mb-8">
             <button onClick={() => handleCityFilter('')}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 selectedCity === '' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-blue-50 border border-gray-200'
               }`}>
-              All Cities
+              {t('home.allCities')}
               <span className="ml-2 text-xs opacity-70">{allHotels.length}</span>
             </button>
             {cities.map((c: any) => {
@@ -168,13 +170,13 @@ export default function Home() {
             })}
           </div>
 
-          {/* Hotels for selected city */}
+          {/* Hotels grid */}
           <AnimatePresence mode="wait">
             <motion.div key={selectedCity} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {cityLoading ? <Spinner /> : cityHotels.length === 0 ? (
                 <div className="text-center py-16 text-gray-400">
                   <MapPin size={40} className="mx-auto mb-2 opacity-40" />
-                  <p>No hotels found in {selectedCity || 'any city'}.</p>
+                  <p>{t('home.noHotels')} {selectedCity ? `in ${selectedCity}` : ''}.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -193,7 +195,7 @@ export default function Home() {
             <div className="text-center mt-8">
               <button onClick={() => navigate(`/hotels?city=${encodeURIComponent(selectedCity)}`)}
                 className="inline-flex items-center gap-2 border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
-                View All {selectedCity ? `Hotels in ${selectedCity}` : 'Hotels'} <ArrowRight size={18} />
+                {t('home.viewAllIn')} {selectedCity || t('home.viewAll')} <ArrowRight size={18} />
               </button>
             </div>
           )}

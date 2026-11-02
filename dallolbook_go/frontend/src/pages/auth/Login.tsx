@@ -8,6 +8,7 @@ import {
   User, Hotel, ChevronRight
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { authService } from '../../services/auth'
 import { adminService } from '../../services/admin'
 import { useAuth } from '../../context/AuthContext'
@@ -26,6 +27,7 @@ const ADMIN_ROUTES: Record<string, string> = {
 }
 
 export default function Login() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { setAuth, setAdminAuth } = useAuth()
@@ -101,8 +103,8 @@ export default function Login() {
           <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xl">
             <span className="text-blue-600 text-3xl font-extrabold">D</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-white">Hotel Booking</h1>
-          <p className="text-blue-200 text-sm mt-1">Ethiopia's Premier Hotel Booking</p>
+          <h1 className="text-2xl font-extrabold text-white">{t('login.title')}</h1>
+          <p className="text-blue-200 text-sm mt-1">{t('login.subtitle')}</p>
         </div>
 
         {/* Redirect notice */}
@@ -110,7 +112,7 @@ export default function Login() {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
             className="bg-amber-500/20 border border-amber-400/30 rounded-xl p-3 mb-4 flex items-start gap-2 text-amber-200 text-sm">
             <Hotel size={16} className="flex-shrink-0 mt-0.5" />
-            <span>Sign in to continue to your hotel booking</span>
+            <span>{t('login.redirectNote')}</span>
           </motion.div>
         )}
 
@@ -120,8 +122,8 @@ export default function Login() {
           {/* Tabs */}
           <div className="flex border-b border-gray-100">
             {[
-              { key: 'guest', label: 'Guest / User', icon: User },
-              { key: 'admin', label: 'Admin / Staff', icon: ShieldCheck },
+              { key: 'guest', label: t('login.tabGuest'), icon: User },
+              { key: 'admin', label: t('login.tabAdmin'), icon: ShieldCheck },
             ].map(t => (
               <button key={t.key}
                 onClick={() => { setTab(t.key as any); setTouched({ email: false, password: false }) }}
@@ -148,19 +150,17 @@ export default function Login() {
                 transition={{ duration: 0.2 }}>
 
                 <h2 className="text-xl font-bold text-gray-900 mb-1">
-                  {tab === 'admin' ? 'Admin Sign In' : 'Welcome Back'}
+                  {tab === 'admin' ? t('login.adminTitle') : t('login.guestTitle')}
                 </h2>
                 <p className="text-gray-400 text-sm mb-6">
-                  {tab === 'admin'
-                    ? 'Sign in to the admin panel with your staff credentials'
-                    : 'Sign in to view your bookings and manage reservations'}
+                  {tab === 'admin' ? t('login.adminSub') : t('login.guestSub')}
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                   {/* Email */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Email Address <span className="text-red-500">*</span>
+                      {t('login.email')} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Mail size={16} className="absolute left-3 top-3.5 text-gray-400" />
@@ -175,11 +175,11 @@ export default function Login() {
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
                       <label className="text-sm font-semibold text-gray-700">
-                        Password <span className="text-red-500">*</span>
+                        {t('login.password')} <span className="text-red-500">*</span>
                       </label>
                       {tab === 'guest' && (
                         <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline">
-                          Forgot password?
+                          {t('login.forgot')}
                         </Link>
                       )}
                     </div>
@@ -204,9 +204,9 @@ export default function Login() {
                         : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}>
                     {loading ? (
-                      <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Signing in…</>
+                      <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> {t('login.signingIn')}</>
                     ) : (
-                      <>Sign In <ChevronRight size={18} /></>
+                      <>{t('login.signIn')} <ChevronRight size={18} /></>
                     )}
                   </button>
                 </form>
@@ -216,16 +216,16 @@ export default function Login() {
                   <div className="mt-6 space-y-3">
                     <div className="relative flex items-center gap-3 text-gray-300">
                       <div className="flex-1 h-px bg-gray-200" />
-                      <span className="text-xs text-gray-400 flex-shrink-0">New to Hotel Booking?</span>
+                      <span className="text-xs text-gray-400 flex-shrink-0">{t('login.newTo')}</span>
                       <div className="flex-1 h-px bg-gray-200" />
                     </div>
                     <Link to={`/register${hasRedirect ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
                       className="w-full flex items-center justify-center gap-2 border-2 border-blue-200 text-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
-                      Create Free Account
+                      {t('login.createFree')}
                     </Link>
                     <Link to="/otp"
                       className="w-full text-center block text-sm text-gray-400 hover:text-gray-600 py-1">
-                      Login with OTP instead
+                      {t('login.otpLogin')}
                     </Link>
                   </div>
                 )}
@@ -235,7 +235,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-blue-200/60 text-xs mt-4">
-          © 2026 Hotel Booking · Ethiopia Hotel Booking Platform
+          {t('login.copyright')}
         </p>
       </motion.div>
     </div>

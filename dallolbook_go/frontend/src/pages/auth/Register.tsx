@@ -3,6 +3,7 @@ import { useState, FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { User, Mail, Phone, Lock, Globe, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import toast from 'react-hot-toast'
 import { authService } from '../../services/auth'
 import { useAuth } from '../../context/AuthContext'
@@ -42,6 +43,7 @@ const cls = (err: FieldError, touched: boolean) =>
   }`
 
 export default function Register() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { setAuth } = useAuth()
@@ -116,13 +118,13 @@ export default function Register() {
           <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
             <span className="text-white text-2xl font-extrabold">D</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900">Create Account</h1>
-          <p className="text-gray-500 text-sm mt-1">Join Hotel Booking and start booking</p>
+          <h1 className="text-2xl font-extrabold text-gray-900">{t('register.title')}</h1>
+          <p className="text-gray-500 text-sm mt-1">{t('register.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           <div className="grid grid-cols-2 gap-3">
-            <FieldWrap label="First Name" error={touched.first_name ? errors.first_name : null}
+            <FieldWrap label={t('register.firstName')} error={touched.first_name ? errors.first_name : null}
               success={touched.first_name && !errors.first_name} required>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-3 text-gray-400" />
@@ -131,7 +133,7 @@ export default function Register() {
                   className={cls(touched.first_name ? errors.first_name : null, !!touched.first_name)} />
               </div>
             </FieldWrap>
-            <FieldWrap label="Last Name" error={touched.last_name ? errors.last_name : null}
+            <FieldWrap label={t('register.lastName')} error={touched.last_name ? errors.last_name : null}
               success={touched.last_name && !errors.last_name} required>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-3 text-gray-400" />
@@ -142,7 +144,7 @@ export default function Register() {
             </FieldWrap>
           </div>
 
-          <FieldWrap label="Email Address" error={touched.email ? errors.email : null}
+          <FieldWrap label={t('register.email')} error={touched.email ? errors.email : null}
             success={touched.email && !errors.email} required={!form.phone}>
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-3 text-gray-400" />
@@ -152,7 +154,7 @@ export default function Register() {
             </div>
           </FieldWrap>
 
-          <FieldWrap label="Phone Number" error={touched.phone ? errors.phone : null}
+          <FieldWrap label={t('register.phone')} error={touched.phone ? errors.phone : null}
             success={touched.phone && !errors.phone} required={!form.email}>
             <div className="relative">
               <Phone size={16} className="absolute left-3 top-3 text-gray-400" />
@@ -162,13 +164,13 @@ export default function Register() {
             </div>
           </FieldWrap>
 
-          <FieldWrap label="Password" error={touched.password ? errors.password : null}
+          <FieldWrap label={t('register.password')} error={touched.password ? errors.password : null}
             success={touched.password && !errors.password} required>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-3 text-gray-400" />
               <input type={showPw ? 'text' : 'password'}
                 value={form.password} onChange={set('password')} onBlur={blur('password')}
-                placeholder="Min 6 chars with letters & numbers"
+                placeholder={t('register.pwHint')}
                 className={cls(touched.password ? errors.password : null, !!touched.password) + ' pr-10'} />
               <button type="button" onClick={() => setShowPw(!showPw)}
                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
@@ -188,11 +190,11 @@ export default function Register() {
             )}
           </FieldWrap>
 
-          <FieldWrap label="Nationality" error={null}>
+          <FieldWrap label={t('register.nationality')} error={null}>
             <div className="relative">
               <Globe size={16} className="absolute left-3 top-3 text-gray-400" />
               <input value={form.nationality} onChange={set('nationality')}
-                placeholder="Ethiopian (optional)"
+                placeholder={t('register.natHint')}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 pl-10 text-sm focus:ring-2 focus:ring-blue-400 outline-none" />
             </div>
           </FieldWrap>
@@ -200,15 +202,15 @@ export default function Register() {
           <button type="submit" disabled={loading}
             className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-base hover:bg-blue-700 active:scale-[.98] transition-all shadow-md disabled:opacity-50 mt-2">
             {loading ? (
-              <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Creating Account…</>
-            ) : 'Create Account →'}
+              <><div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> {t('register.creating')}</>
+            ) : t('register.create')}
           </button>
         </form>
 
         <p className="mt-5 text-center text-sm text-gray-600">
-          Already have an account?{' '}
+          {t('register.haveAccount')}{' '}
           <Link to={`/login${redirectTo !== '/dashboard' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
-            className="text-blue-600 font-semibold hover:underline">Sign in</Link>
+            className="text-blue-600 font-semibold hover:underline">{t('register.signIn')}</Link>
         </p>
       </motion.div>
     </div>

@@ -1,0 +1,152 @@
+// i18n/en.ts — English translations
+const en = {
+  // ── Navbar ──────────────────────────────────────────────────────────────────
+  nav: {
+    brand:      'Hotel Booking',
+    hotels:     'Hotels',
+    dashboard:  'Dashboard',
+    wishlist:   'Wishlist',
+    login:      'Login',
+    register:   'Register',
+    logout:     'Logout',
+    adminPanel: 'Admin Panel',
+  },
+
+  // ── Footer ──────────────────────────────────────────────────────────────────
+  footer: {
+    tagline:    'Discover and book the best hotels across Ethiopia.',
+    quickLinks: 'Quick Links',
+    contact:    'Contact',
+    copyright:  'Hotel Booking. All rights reserved.',
+  },
+
+  // ── Home page ───────────────────────────────────────────────────────────────
+  home: {
+    heroBadge:    "Ethiopia's Premier Hotel Booking Platform",
+    heroTitle:    "Discover Ethiopia's\nBest Hotels",
+    heroSub:      'From Addis Ababa to Bahir Dar — find and book your perfect stay in seconds.',
+    searchName:   'Search hotel name...',
+    allCities:    'All Cities',
+    searchBtn:    'Search Hotels',
+    featured:     'Featured Hotels',
+    noFeatured:   'No featured hotels available.',
+    browseCity:   'Browse by City',
+    viewAll:      'View All Hotels',
+    noHotels:     'No hotels found',
+    viewAllIn:    'View All Hotels in',
+  },
+
+  // ── Hotel Card ──────────────────────────────────────────────────────────────
+  card: {
+    view:       'View',
+    night:      '/ night',
+    reviews:    'reviews',
+    from:       'From',
+    noReviews:  'No reviews',
+  },
+
+  // ── Hotel Detail ────────────────────────────────────────────────────────────
+  detail: {
+    about:        'About this hotel',
+    amenities:    'Amenities',
+    selectRooms:  'Select Rooms',
+    checkDates:   'Select dates to check availability',
+    checkIn:      'Check-in',
+    checkOut:     'Check-out',
+    nights:       'nights',
+    night:        'night',
+    available:    'available',
+    noRooms:      'No rooms configured',
+    tryDates:     'Try different dates',
+    checking:     'Checking room availability…',
+    tapSelect:    'room(s) available — tap to select',
+    notAvailable: 'Not Available for These Dates',
+    reserved:     'Reserved',
+    until:        'Until',
+    selected:     '✓ Selected',
+    selectLabel:  '✓ Available',
+    qty:          'Qty:',
+    location:     'Location',
+    reviews:      'Guest Reviews',
+    writeReview:  '+ Write review',
+    cancelReview: 'Cancel',
+    postReview:   'Post Review',
+    posting:      'Posting…',
+    noReviews:    'No reviews yet — be the first!',
+    shareExp:     'Share your experience…',
+    startingFrom: 'Starting from',
+    total:        'Total',
+    selectRoom:   '← Select a Room',
+    bookRooms:    'Book',
+    bookNow:      'Book Now',
+    signInCont:   "You'll be asked to sign in to continue",
+    rating:       'Rating',
+    featured:     '★ Featured',
+    maxGuests:    'max',
+  },
+
+  // ── Login ───────────────────────────────────────────────────────────────────
+  login: {
+    title:        'Hotel Booking',
+    subtitle:     "Ethiopia's Premier Hotel Booking",
+    tabGuest:     'Guest / User',
+    tabAdmin:     'Admin / Staff',
+    adminTitle:   'Admin Sign In',
+    adminSub:     'Sign in to the admin panel with your staff credentials',
+    guestTitle:   'Welcome Back',
+    guestSub:     'Sign in to view your bookings and manage reservations',
+    email:        'Email Address',
+    password:     'Password',
+    forgot:       'Forgot password?',
+    signIn:       'Sign In',
+    signingIn:    'Signing in…',
+    newTo:        'New to Hotel Booking?',
+    createFree:   'Create Free Account',
+    otpLogin:     'Login with OTP instead',
+    redirectNote: 'Sign in to continue to your hotel booking',
+    copyright:    '© 2026 Hotel Booking · Ethiopia Hotel Booking Platform',
+  },
+
+  // ── Register ────────────────────────────────────────────────────────────────
+  register: {
+    title:       'Create Account',
+    subtitle:    'Join Hotel Booking and start booking',
+    firstName:   'First Name',
+    lastName:    'Last Name',
+    email:       'Email Address',
+    phone:       'Phone Number',
+    password:    'Password',
+    nationality: 'Nationality',
+    optional:    '(optional)',
+    pwHint:      'Min 6 chars with letters & numbers',
+    natHint:     'Ethiopian (optional)',
+    creating:    'Creating Account…',
+    create:      'Create Account →',
+    haveAccount: 'Already have an account?',
+    signIn:      'Sign in',
+    weak:        'Weak',
+    fair:        'Fair',
+    good:        'Good',
+    strong:      'Strong',
+    veryStrong:  'Very Strong',
+  },
+
+  // ── Common ──────────────────────────────────────────────────────────────────
+  common: {
+    loading:   'Loading…',
+    error:     'Something went wrong',
+    back:      'Back',
+    save:      'Save',
+    cancel:    'Cancel',
+    delete:    'Delete',
+    edit:      'Edit',
+    confirm:   'Confirm',
+    yes:       'Yes',
+    no:        'No',
+    etb:       'ETB',
+    perNight:  '/night',
+  },
+}
+
+export default en
+export type Translations = typeof en
