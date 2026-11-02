@@ -572,14 +572,14 @@ export default function BookingConfirm() {
                 initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }}
                 className="space-y-5">
 
-                {/* Summary banner */}
+                {/* ── Booking summary banner ── */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
                   <img src={hotel?.images?.[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=80'}
                     alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-800 truncate">{hotel?.name}</p>
                     {preRoomName && <p className="text-xs text-blue-600 flex items-center gap-1"><Bed size={11} /> {preRoomName}</p>}
-                    <p className="text-xs text-gray-500">{form.check_in} → {form.check_out} · {nights}N · {form.adults} adults</p>
+                    <p className="text-xs text-gray-500">{form.check_in} → {form.check_out} · {nights}N · {form.adults} adult{Number(form.adults) > 1 ? 's' : ''}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-xl font-extrabold text-gray-900">ETB {total.toLocaleString()}</p>
@@ -587,10 +587,10 @@ export default function BookingConfirm() {
                   </div>
                 </div>
 
-                {/* Payment method grid */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                {/* ── Payment method selector ── */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h2 className="font-bold text-gray-800 flex items-center gap-2 mb-4">
-                    <CreditCard size={18} className="text-blue-600" /> Select Payment Method
+                    <CreditCard size={18} className="text-blue-600" /> Choose How You'll Pay
                   </h2>
 
                   {pmLoading ? (
@@ -599,97 +599,156 @@ export default function BookingConfirm() {
                       Loading payment options…
                     </div>
                   ) : payMethods.length === 0 ? (
-                    <p className="text-center text-gray-400 py-6 text-sm">No payment methods configured for this hotel.</p>
+                    <div className="text-center py-8 text-gray-400">
+                      <CreditCard size={36} className="mx-auto mb-2 opacity-40" />
+                      <p className="text-sm font-medium">No payment methods configured for this hotel.</p>
+                      <p className="text-xs mt-1">Contact the hotel directly to arrange payment.</p>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {payMethods.map((pm: any) => {
-                        const cfg = PM_CONFIG[pm.method] || { label: pm.method, logo: '🏦', bgGrad: 'from-gray-500 to-gray-600', badgeColor: '' }
+                        const cfg = PM_CONFIG[pm.method] || { label: pm.method, logo: '🏦', bgGrad: 'from-gray-400 to-gray-500', badgeColor: '' }
                         const sel = form.payment_method === pm.method
+                        // Determine what to show as account preview in the card
+                        const preview = pm.phone_number || (pm.account_number ? pm.account_number.slice(-6).padStart(pm.account_number.length, '•') : '')
                         return (
-                          <button key={pm.id}
+                          <motion.button key={pm.id}
                             onClick={() => setForm(f => ({ ...f, payment_method: pm.method, transaction_id: '' }))}
-                            className={`relative p-4 rounded-2xl border-2 text-left transition-all duration-200 group ${
-                              sel ? 'border-blue-500 shadow-md shadow-blue-100 scale-[1.03]'
-                                  : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                            whileTap={{ scale: 0.97 }}
+                            className={`relative p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
+                              sel
+                                ? 'border-blue-500 shadow-lg shadow-blue-100/60 scale-[1.02] bg-blue-50'
+                                : 'border-gray-200 hover:border-blue-300 hover:shadow-md bg-white'
                             }`}>
                             {sel && (
-                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                                className="absolute top-2 right-2 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400 }}
+                                className="absolute top-2.5 right-2.5 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
                                 <Check size={11} className="text-white" />
                               </motion.div>
                             )}
-                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${cfg.bgGrad} flex items-center justify-center mb-2.5 shadow-sm`}>
-                              <span className="text-xl">{cfg.logo}</span>
+                            <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${cfg.bgGrad} flex items-center justify-center mb-2.5 shadow-sm`}>
+                              <span className="text-2xl">{cfg.logo}</span>
                             </div>
-                            <p className="font-bold text-gray-800 text-xs leading-tight">{cfg.label}</p>
-                            {(pm.phone_number || pm.account_number) && (
-                              <p className="text-[10px] text-gray-400 mt-0.5 font-mono truncate">
-                                {pm.phone_number || pm.account_number?.slice(0, 10) + '…'}
+                            <p className={`font-bold text-sm leading-tight ${sel ? 'text-blue-700' : 'text-gray-800'}`}>{cfg.label}</p>
+                            {preview && (
+                              <p className={`text-[11px] mt-1 font-mono ${sel ? 'text-blue-500' : 'text-gray-400'}`}>
+                                {pm.phone_number ? '📞 ' : '🔢 '}{preview}
                               </p>
                             )}
-                          </button>
+                          </motion.button>
                         )
                       })}
                     </div>
                   )}
                 </div>
 
-                {/* Account details card */}
+                {/* ── Payment account details — shown when a method is selected ── */}
                 <AnimatePresence mode="wait">
-                  {selectedPm && (
-                    <motion.div key={selectedPm.method}
-                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                      <div className={`bg-gradient-to-r ${pmCfg.bgGrad} px-5 py-3.5 flex items-center gap-3`}>
-                        <span className="text-2xl">{pmCfg.logo}</span>
-                        <div>
-                          <p className="text-white font-bold">{pmCfg.label}</p>
-                          <p className="text-white/70 text-xs">Send the exact amount and note your Booking ID</p>
+                  {selectedPm && (() => {
+                    const cfg = PM_CONFIG[selectedPm.method] || { label: selectedPm.method, logo: '🏦', bgGrad: 'from-gray-400 to-gray-500', badgeColor: 'bg-gray-50 border-gray-200 text-gray-800' }
+                    const hasPhone  = !!selectedPm.phone_number
+                    const hasAccNum = !!selectedPm.account_number
+
+                    return (
+                      <motion.div key={selectedPm.method}
+                        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0,  scale: 1    }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.25 }}
+                        className="bg-white rounded-2xl border border-gray-100 shadow-md overflow-hidden">
+
+                        {/* Header */}
+                        <div className={`bg-gradient-to-r ${cfg.bgGrad} px-5 py-4`}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+                              <span className="text-2xl">{cfg.logo}</span>
+                            </div>
+                            <div>
+                              <p className="text-white font-extrabold text-lg">{cfg.label}</p>
+                              <p className="text-white/75 text-xs">
+                                Send <span className="font-bold text-white">ETB {total.toLocaleString()}</span> to the account below
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="p-5 space-y-3">
-                        {selectedPm.account_name && (
-                          <div className={`flex items-center justify-between rounded-xl px-4 py-3 border ${pmCfg.badgeColor}`}>
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wider font-semibold opacity-60">Account Name</p>
-                              <p className="font-semibold text-sm mt-0.5">{selectedPm.account_name}</p>
+
+                        <div className="p-5 space-y-3">
+
+                          {/* Account name */}
+                          {selectedPm.account_name && (
+                            <div className={`rounded-xl px-4 py-3 border ${cfg.badgeColor} flex items-center justify-between gap-3`}>
+                              <div className="min-w-0">
+                                <p className="text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5">Account Name</p>
+                                <p className="font-bold text-sm truncate">{selectedPm.account_name}</p>
+                              </div>
+                              <button onClick={() => copy(selectedPm.account_name, 'Account name')}
+                                className="p-2 rounded-xl hover:bg-black/10 transition-colors flex-shrink-0" title="Copy">
+                                <Copy size={15} />
+                              </button>
                             </div>
-                            <button onClick={() => copy(selectedPm.account_name, 'Account name')}
-                              className="p-2 rounded-lg hover:bg-black/10 transition-colors"><Copy size={14} /></button>
-                          </div>
-                        )}
-                        {selectedPm.phone_number && (
-                          <div className={`flex items-center justify-between rounded-xl px-4 py-3 border ${pmCfg.badgeColor}`}>
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wider font-semibold opacity-60">Phone / Wallet Number</p>
-                              <p className="font-black text-lg tracking-widest font-mono">{selectedPm.phone_number}</p>
+                          )}
+
+                          {/* Phone number — BIG, prominent */}
+                          {hasPhone && (
+                            <div className={`rounded-xl px-4 py-3.5 border-2 ${
+                              cfg.badgeColor.replace('border-', 'border-2 border-')
+                            } flex items-center justify-between gap-3`}>
+                              <div className="min-w-0">
+                                <p className="text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
+                                  <Phone size={10} /> Phone / Wallet Number
+                                </p>
+                                <p className="font-black text-2xl tracking-widest font-mono">{selectedPm.phone_number}</p>
+                                <p className="text-xs opacity-60 mt-0.5">Send via {cfg.label} app</p>
+                              </div>
+                              <button onClick={() => copy(selectedPm.phone_number, 'Phone number')}
+                                className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-black/10 transition-colors flex-shrink-0" title="Copy phone">
+                                <Copy size={18} />
+                                <span className="text-[10px] font-semibold opacity-70">Copy</span>
+                              </button>
                             </div>
-                            <button onClick={() => copy(selectedPm.phone_number, 'Phone')}
-                              className="p-2 rounded-lg hover:bg-black/10 transition-colors"><Copy size={14} /></button>
-                          </div>
-                        )}
-                        {selectedPm.account_number && !selectedPm.phone_number && (
-                          <div className={`flex items-center justify-between rounded-xl px-4 py-3 border ${pmCfg.badgeColor}`}>
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wider font-semibold opacity-60">Account Number</p>
-                              <p className="font-black text-lg tracking-widest font-mono">{selectedPm.account_number}</p>
+                          )}
+
+                          {/* Account number — shown ALWAYS if present (alongside phone) */}
+                          {hasAccNum && (
+                            <div className={`rounded-xl px-4 py-3 border ${cfg.badgeColor} flex items-center justify-between gap-3`}>
+                              <div className="min-w-0">
+                                <p className="text-[10px] uppercase tracking-widest font-bold opacity-60 mb-0.5 flex items-center gap-1">
+                                  <Building size={10} /> Account Number
+                                </p>
+                                <p className="font-black text-xl tracking-widest font-mono">{selectedPm.account_number}</p>
+                                <p className="text-xs opacity-60 mt-0.5">For bank transfer</p>
+                              </div>
+                              <button onClick={() => copy(selectedPm.account_number, 'Account number')}
+                                className="flex flex-col items-center gap-1 p-3 rounded-xl hover:bg-black/10 transition-colors flex-shrink-0" title="Copy account">
+                                <Copy size={18} />
+                                <span className="text-[10px] font-semibold opacity-70">Copy</span>
+                              </button>
                             </div>
-                            <button onClick={() => copy(selectedPm.account_number, 'Account number')}
-                              className="p-2 rounded-lg hover:bg-black/10 transition-colors"><Copy size={14} /></button>
+                          )}
+
+                          {/* Instructions */}
+                          {selectedPm.instructions && (
+                            <div className={`rounded-xl px-4 py-3 border ${cfg.badgeColor} flex items-start gap-2`}>
+                              <Info size={14} className="flex-shrink-0 mt-0.5 opacity-70" />
+                              <p className="text-sm leading-relaxed">{selectedPm.instructions}</p>
+                            </div>
+                          )}
+
+                          {/* Amount reminder */}
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2">
+                            <span className="text-amber-600 text-lg flex-shrink-0">⚠️</span>
+                            <p className="text-sm text-amber-800">
+                              Send exactly <strong className="text-amber-900 font-extrabold">ETB {total.toLocaleString()}</strong>.
+                              Include your <strong>booking reference</strong> in the transfer note.
+                            </p>
                           </div>
-                        )}
-                        {selectedPm.instructions && (
-                          <div className={`flex items-start gap-2 rounded-xl px-4 py-3 border ${pmCfg.badgeColor}`}>
-                            <Info size={14} className="mt-0.5 flex-shrink-0 opacity-70" />
-                            <p className="text-sm">{selectedPm.instructions}</p>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
+                        </div>
+                      </motion.div>
+                    )
+                  })()}
                 </AnimatePresence>
 
-                {/* Transaction proof */}
+                {/* ── Upload payment proof ── */}
                 {form.payment_method && (
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
                     <h2 className="font-bold text-gray-800 flex items-center gap-2">
@@ -698,20 +757,24 @@ export default function BookingConfirm() {
 
                     <F label="Transaction ID / Reference Number" required
                       error={touched.transaction_id ? e2.transaction_id : null}
-                      hint="Enter the transaction reference shown after your transfer">
-                      <input value={form.transaction_id}
-                        onChange={set('transaction_id')} onBlur={blur('transaction_id')}
-                        placeholder="e.g. TXN123456789"
-                        className={inputCls(e2.transaction_id, !!touched.transaction_id) + ' font-mono'} />
+                      hint="The reference number shown in the transfer confirmation">
+                      <div className="relative">
+                        <Smartphone size={15} className="absolute left-3 top-3 text-gray-400" />
+                        <input value={form.transaction_id}
+                          onChange={set('transaction_id')} onBlur={blur('transaction_id')}
+                          placeholder="e.g. TXN123456789 or FT12345678"
+                          className={inputCls(e2.transaction_id, !!touched.transaction_id) + ' pl-9 font-mono'} />
+                      </div>
                     </F>
 
                     <div>
                       <p className="text-sm font-semibold text-gray-700 mb-2">
                         Payment Screenshot <span className="text-red-500">*</span>
+                        <span className="text-xs text-gray-400 font-normal ml-2">— take a screenshot of the transfer confirmation</span>
                       </p>
                       <label className={`block border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${
-                        uploading.screenshot_url       ? 'border-blue-400 bg-blue-50 opacity-70'
-                        : form.screenshot_url          ? 'border-emerald-400 bg-emerald-50'
+                        uploading.screenshot_url              ? 'border-blue-400 bg-blue-50 opacity-70'
+                        : form.screenshot_url                 ? 'border-emerald-400 bg-emerald-50'
                         : touched.screenshot_url && e2.screenshot_url ? 'border-red-400 bg-red-50'
                         : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
                       }`}>
@@ -722,24 +785,24 @@ export default function BookingConfirm() {
                           </div>
                         ) : form.screenshot_url ? (
                           <div>
-                            <img src={form.screenshot_url} alt="screenshot" className="max-h-40 mx-auto rounded-xl shadow-sm mb-2" />
+                            <img src={form.screenshot_url} alt="screenshot" className="max-h-44 mx-auto rounded-xl shadow-sm mb-2 object-contain" />
                             <p className="text-xs text-emerald-600 font-semibold flex items-center justify-center gap-1">
                               <Check size={13} /> Screenshot attached
                             </p>
-                            <span onClick={() => { setForm(f => ({ ...f, screenshot_url: '' })); setTouched(t => ({ ...t, screenshot_url: true })) }}
+                            <span onClick={(e) => { e.preventDefault(); setForm(f => ({ ...f, screenshot_url: '' })); setTouched(t => ({ ...t, screenshot_url: true })) }}
                               className="text-xs text-red-400 mt-1 inline-block cursor-pointer hover:text-red-600">Remove</span>
                           </div>
                         ) : (
                           <div className="space-y-1.5">
                             <Upload size={32} className="mx-auto text-gray-400" />
                             <p className="text-sm font-medium text-gray-600">Click to upload screenshot</p>
-                            <p className="text-xs text-gray-400">PNG, JPG up to 5MB — <strong>Required</strong></p>
+                            <p className="text-xs text-gray-400">PNG or JPG, max 5 MB — <strong>Required</strong></p>
                           </div>
                         )}
                         <input type="file" accept="image/*" onChange={pickImg('screenshot_url')} className="hidden" disabled={uploading.screenshot_url} />
                       </label>
                       {touched.screenshot_url && e2.screenshot_url && (
-                        <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                        <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                           <AlertCircle size={11} /> {e2.screenshot_url}
                         </p>
                       )}
@@ -747,24 +810,29 @@ export default function BookingConfirm() {
                   </div>
                 )}
 
-                {/* Final total */}
+                {/* ── Final summary ── */}
                 <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-2xl p-5 border border-emerald-100">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center gap-4">
                     <div className="text-sm text-gray-600 space-y-0.5">
                       <p className="font-semibold text-gray-800">{hotel?.name}</p>
-                      <p>{form.check_in} → {form.check_out}</p>
-                      <p>{form.first_name} {form.last_name} · {form.adults} adult{Number(form.adults) > 1 ? 's' : ''}</p>
-                      {preRoomName && <p className="text-blue-600">{preRoomName}</p>}
+                      <p>{form.check_in} → {form.check_out} · {nights} night{nights > 1 ? 's' : ''}</p>
+                      <p>{form.first_name} {form.last_name} · {form.adults} adult{Number(form.adults) > 1 ? 's' : ''}{Number(form.children) > 0 ? ` · ${form.children} child${Number(form.children) > 1 ? 'ren' : ''}` : ''}</p>
+                      {preRoomName && <p className="text-blue-600 font-medium">{preRooms}× {preRoomName}</p>}
+                      {form.payment_method && (
+                        <p className="flex items-center gap-1 text-purple-700 font-medium">
+                          <CreditCard size={12} /> {PM_CONFIG[form.payment_method]?.label || form.payment_method}
+                        </p>
+                      )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <p className="text-3xl font-extrabold text-gray-900">ETB {total.toLocaleString()}</p>
-                      <p className="text-xs text-gray-400">{nights} nights · {form.rooms} room{Number(form.rooms) > 1 ? 's' : ''}</p>
+                      <p className="text-xs text-gray-400">{nights} night{nights > 1 ? 's' : ''} · {preRooms} room{preRooms > 1 ? 's' : ''}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Buttons */}
-                <div className="flex gap-3 pb-4">
+                {/* ── Buttons ── */}
+                <div className="flex gap-3 pb-6">
                   <button onClick={() => { setStep(1); window.scrollTo(0, 0) }}
                     className="flex items-center gap-2 px-5 py-3.5 rounded-2xl border-2 border-gray-200 text-gray-600 hover:bg-gray-50 font-semibold transition-all">
                     <ChevronLeft size={18} /> Back
