@@ -39,8 +39,9 @@ export default function HotelDetail() {
   const { hotel, loading } = useHotel(Number(id))
 
   const [activeImg, setActiveImg]   = useState(0)
-  const [lightbox, setLightbox]     = useState(false)   // full-screen lightbox
-  const [slideDir, setSlideDir]     = useState(1)       // 1=next, -1=prev
+  const [lightbox, setLightbox]     = useState(false)
+  const [slideDir, setSlideDir]     = useState(1)
+  const [imgCount, setImgCount]     = useState(1)   // kept in state so hooks are stable
   const [wishlisted, setWishlisted] = useState(false)
   const [reviews, setReviews]       = useState<any[]>([])
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' })
@@ -164,30 +165,28 @@ export default function HotelDetail() {
     setSubmittingReview(false)
   }
 
-  if (loading) return <><Navbar /><div className="flex justify-center items-center min-h-screen"><Spinner size="lg" /></div></>
-  if (!hotel)  return <><Navbar /><div className="text-center py-20 text-gray-400">Hotel not found</div></>
+  // Sync imgCount when hotel loads so gallery callbacks are stable
+  useEffect(() => {
+    if (hotel?.images?.length) setImgCount(hotel.images.length)
+  }, [hotel])
 
-  const images = hotel.images?.length ? hotel.images : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800']
-  const availableRooms = allRooms.filter(r => !r.is_occupied && r.room_status === 'available')
-  const occupiedRooms  = allRooms.filter(r => r.is_occupied || r.room_status !== 'available')
-
-  // Gallery helpers
+  // ── Gallery navigation — ALL hooks must be above early returns ────────────
   const goNext = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation()
     setSlideDir(1)
-    setActiveImg(i => (i + 1) % images.length)
-  }, [images.length])
+    setActiveImg(i => (i + 1) % imgCount)
+  }, [imgCount])
 
   const goPrev = useCallback((e?: React.MouseEvent) => {
     e?.stopPropagation()
     setSlideDir(-1)
-    setActiveImg(i => (i - 1 + images.length) % images.length)
-  }, [images.length])
+    setActiveImg(i => (i - 1 + imgCount) % imgCount)
+  }, [imgCount])
 
-  const goTo = (i: number) => {
+  const goTo = useCallback((i: number) => {
     setSlideDir(i > activeImg ? 1 : -1)
     setActiveImg(i)
-  }
+  }, [activeImg])
 
   // Keyboard nav for lightbox
   useEffect(() => {
@@ -200,6 +199,14 @@ export default function HotelDetail() {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [lightbox, goNext, goPrev])
+
+  // ── Early returns (MUST be after all hooks) ───────────────────────────────
+  if (loading) return <><Navbar /><div className="flex justify-center items-center min-h-screen"><Spinner size="lg" /></div></>
+  if (!hotel)  return <><Navbar /><div className="text-center py-20 text-gray-400">Hotel not found</div></>
+
+  const images = hotel.images?.length ? hotel.images : ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800']
+  const availableRooms = allRooms.filter((r: any) => !r.is_occupied && r.room_status === 'available')
+  const occupiedRooms  = allRooms.filter((r: any) => r.is_occupied || r.room_status !== 'available')
 
   return (
     <>
