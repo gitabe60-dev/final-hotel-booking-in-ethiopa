@@ -28,10 +28,11 @@ export default function Home() {
           hotelService.search({ limit: 50 }),
           getCities(),
         ])
+        const allHotelData = allRes.data.data?.hotels || []
         setFeatured(featRes.data.data || [])
-        setAllHotels(allRes.data.data?.hotels || [])
-        setCities(cityRes || [])
-        setCityHotels(allRes.data.data?.hotels || [])
+        setAllHotels(allHotelData)
+        setCities(cityRes && cityRes.length > 0 ? cityRes : [])
+        setCityHotels(allHotelData)
       } catch { /* ignore */ }
       setLoading(false)
     }

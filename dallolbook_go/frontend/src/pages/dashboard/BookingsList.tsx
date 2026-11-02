@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Calendar, Users, Bed, MapPin, XCircle, CreditCard, ArrowRight } from 'lucide-react'
+import { Calendar, Users, Bed, MapPin, XCircle, CreditCard, ArrowRight, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useBookings } from '../../hooks/useBooking'
 import { bookingService } from '../../services/booking'
@@ -50,16 +50,17 @@ export default function BookingsList() {
         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Bookings</h1>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-5 gap-3 mb-6">
           {[
-            { key: 'all', label: 'All', count: bookings.length },
-            { key: 'pending', label: 'Pending', count: bookings.filter((b: any) => b.status === 'pending').length },
+            { key: 'all',       label: 'All',       count: bookings.length },
+            { key: 'pending',   label: 'Pending',   count: bookings.filter((b: any) => b.status === 'pending').length },
             { key: 'confirmed', label: 'Confirmed', count: bookings.filter((b: any) => b.status === 'confirmed').length },
             { key: 'completed', label: 'Completed', count: bookings.filter((b: any) => b.status === 'completed').length },
+            { key: 'cancelled', label: 'Cancelled', count: bookings.filter((b: any) => b.status === 'cancelled').length },
           ].map(s => (
             <button key={s.key} onClick={() => setFilter(s.key)}
-              className={`p-4 rounded-xl text-center transition-all ${filter === s.key ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-gray-100 hover:bg-gray-50'}`}>
-              <p className={`text-2xl font-bold ${filter === s.key ? 'text-white' : 'text-gray-800'}`}>{s.count}</p>
+              className={`p-3 rounded-xl text-center transition-all ${filter === s.key ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-gray-100 hover:bg-gray-50'}`}>
+              <p className={`text-xl font-bold ${filter === s.key ? 'text-white' : 'text-gray-800'}`}>{s.count}</p>
               <p className={`text-xs ${filter === s.key ? 'text-blue-100' : 'text-gray-500'}`}>{s.label}</p>
             </button>
           ))}
@@ -111,13 +112,21 @@ export default function BookingsList() {
                               <XCircle size={16} /> Cancel
                             </button>
                           )}
-                          {b.status === 'pending' && (
+                          {/* Show Pay Now only when payment is pending (not yet submitted) */}
+                          {b.status === 'pending' && paymentStatuses[b.id] !== 'submitted' && paymentStatuses[b.id] !== 'completed' && (
                             <button onClick={() => navigate(`/payment/${b.id}`)}
                               className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
                               <CreditCard size={16} /> Pay Now <ArrowRight size={14} />
                             </button>
                           )}
-                          {b.status === 'confirmed' && (
+                          {/* Show "Submitted — Awaiting" for submitted payments */}
+                          {b.status === 'pending' && paymentStatuses[b.id] === 'submitted' && (
+                            <button onClick={() => navigate(`/payment/${b.id}`)}
+                              className="flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1.5 rounded-lg text-sm font-medium">
+                              <Clock size={14} /> Awaiting Verification
+                            </button>
+                          )}
+                          {(b.status === 'confirmed' || b.status === 'completed') && (
                             <button onClick={() => navigate(`/payment/${b.id}`)}
                               className="flex items-center gap-1 border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
                               View Details
