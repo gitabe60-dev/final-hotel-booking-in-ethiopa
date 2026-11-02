@@ -569,7 +569,7 @@ func (h *Handler) ManagerDashboard(c *gin.Context) {
 	adminID := c.GetInt("admin_id")
 	hotelID := h.model.GetManagerHotelID(adminID)
 	rooms, _ := h.model.GetRooms(hotelID)
-	bookings, _ := h.model.GetBookings("", "", 8)
+	bookings, _ := h.model.GetBookings("", "", 8, hotelID)
 	unread := h.model.CountUnread(adminID)
 	utils.Success(c, "Manager dashboard.", gin.H{
 		"hotel_id": hotelID, "rooms": rooms,
@@ -587,7 +587,9 @@ func (h *Handler) ManagerRooms(c *gin.Context) {
 
 // GET /api/admin/manager/bookings
 func (h *Handler) ManagerBookings(c *gin.Context) {
-	bookings, _ := h.model.GetBookings("", c.Query("status"), 100)
+	adminID := c.GetInt("admin_id")
+	hotelID := h.model.GetManagerHotelID(adminID)
+	bookings, _ := h.model.GetBookings("", c.Query("status"), 200, hotelID)
 	utils.Success(c, "Bookings.", bookings)
 }
 

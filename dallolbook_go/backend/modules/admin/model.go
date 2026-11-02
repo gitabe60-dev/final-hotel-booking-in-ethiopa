@@ -314,7 +314,7 @@ func (m *Model) SetRoomStatus(id int, status string) error {
 
 // ─── Bookings (admin view) ────────────────────────────────────────────────────
 
-func (m *Model) GetBookings(city, status string, limit int) ([]map[string]any, error) {
+func (m *Model) GetBookings(city, status string, limit int, hotelID ...int) ([]map[string]any, error) {
 	q := `SELECT b.id,b.user_id,u.first_name||' '||u.last_name,
 		         b.hotel_id,h.name,h.city,
 		         b.check_in::text,b.check_out::text,b.rooms,b.total_price,
@@ -328,6 +328,11 @@ func (m *Model) GetBookings(city, status string, limit int) ([]map[string]any, e
 	if city != "" {
 		q += ` AND LOWER(h.city)=LOWER($` + itoa(i) + `)`
 		args = append(args, city); i++
+	}
+	// Optional hotel_id filter (variadic — pass a single int to restrict to one hotel)
+	if len(hotelID) > 0 && hotelID[0] > 0 {
+		q += ` AND b.hotel_id=$` + itoa(i)
+		args = append(args, hotelID[0]); i++
 	}
 	if status != "" {
 		q += ` AND b.status=$` + itoa(i)
