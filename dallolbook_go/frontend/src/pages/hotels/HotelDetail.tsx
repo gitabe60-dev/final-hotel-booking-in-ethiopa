@@ -285,63 +285,115 @@ export default function HotelDetail() {
                   </div>
                 ) : (
                   <>
-                    {/* Available rooms */}
+                    {/* Available rooms — tap to select */}
                     {availableRooms.length > 0 && (
                       <div className="space-y-3">
+                        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide flex items-center gap-1.5">
+                          <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block" />
+                          {availableRooms.length} room{availableRooms.length > 1 ? 's' : ''} available — tap to select
+                        </p>
                         {availableRooms.map((room: any) => {
-                          const qty   = roomQty[room.id] || 0
-                          const rTotal = room.price_per_night * Math.max(qty, 1) * nights
+                          const qty     = roomQty[room.id] || 0
+                          const isActive = qty > 0
+                          const rTotal  = room.price_per_night * qty * nights
+
                           return (
                             <motion.div key={room.id}
-                              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                              className={`border-2 rounded-xl p-4 transition-all ${qty > 0 ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}`}>
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => {
+                                // Tap card to toggle: if 0 → set to 1, if already selected → deselect (set to 0)
+                                if (qty === 0) {
+                                  setRoomQty(q => ({ ...q, [room.id]: 1 }))
+                                  toast.success(`${room.name} selected! ✓`, { duration: 1500 })
+                                } else if (qty > 0) {
+                                  setRoomQty(q => ({ ...q, [room.id]: 0 }))
+                                }
+                              }}
+                              className={`cursor-pointer border-2 rounded-2xl p-4 transition-all duration-200 select-none ${
+                                isActive
+                                  ? 'border-blue-500 bg-blue-50 shadow-lg shadow-blue-100 ring-2 ring-blue-200'
+                                  : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50/50 hover:shadow-sm'
+                              }`}>
                               <div className="flex gap-4">
                                 {/* Room image */}
-                                <div className="w-24 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-gray-200">
+                                <div className={`w-28 h-24 rounded-xl overflow-hidden flex-shrink-0 transition-all ${isActive ? 'ring-2 ring-blue-400' : ''}`}>
                                   {room.image_url
                                     ? <img src={room.image_url} alt={room.name} className="w-full h-full object-cover" />
-                                    : <div className="w-full h-full flex items-center justify-center bg-blue-100"><Bed size={28} className="text-blue-400" /></div>}
+                                    : <div className="w-full h-full flex items-center justify-center bg-blue-50"><Bed size={32} className="text-blue-300" /></div>
+                                  }
                                 </div>
-                                {/* Room details */}
+
+                                {/* Room info */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between flex-wrap gap-2">
+                                  <div className="flex items-start justify-between gap-2">
                                     <div>
-                                      <h3 className="font-bold text-gray-800">{room.name}</h3>
-                                      <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-2">
-                                        <span>{room.bed_type} bed</span>
-                                        <span className="flex items-center gap-1"><Users size={13} /> max {room.max_guests} guests</span>
-                                        {room.size_sqm > 0 && <span>{room.size_sqm}m²</span>}
-                                      </p>
+                                      <h3 className={`font-bold text-base ${isActive ? 'text-blue-700' : 'text-gray-800'}`}>{room.name}</h3>
+                                      <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500">
+                                        <span className="flex items-center gap-1">🛏️ {room.bed_type}</span>
+                                        <span className="flex items-center gap-1"><Users size={11} /> max {room.max_guests}</span>
+                                        {room.size_sqm > 0 && <span>📐 {room.size_sqm}m²</span>}
+                                      </div>
                                     </div>
-                                    {/* Qty counter */}
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                      <button
-                                        onClick={() => changeQty(room.id, -1, room.max_guests)}
-                                        disabled={qty === 0}
-                                        className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                                        <Minus size={14} />
-                                      </button>
-                                      <span className={`w-6 text-center font-bold text-sm ${qty > 0 ? 'text-blue-600' : 'text-gray-400'}`}>{qty}</span>
-                                      <button
-                                        onClick={() => changeQty(room.id, 1, room.max_guests)}
-                                        disabled={qty >= 2}
-                                        className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-600 hover:border-blue-500 hover:text-blue-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all">
-                                        <Plus size={14} />
-                                      </button>
-                                    </div>
+                                    {/* Active checkmark */}
+                                    <motion.div
+                                      initial={false}
+                                      animate={{ scale: isActive ? 1 : 0, opacity: isActive ? 1 : 0 }}
+                                      transition={{ type: 'spring', stiffness: 400 }}
+                                      className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                                      <Check size={15} className="text-white" />
+                                    </motion.div>
                                   </div>
-                                  <div className="flex items-center justify-between mt-2 flex-wrap gap-1">
+
+                                  {/* Price + per night */}
+                                  <div className="flex items-center justify-between mt-2">
                                     <div>
-                                      <span className="text-lg font-bold text-blue-600">ETB {room.price_per_night?.toLocaleString()}</span>
-                                      <span className="text-gray-400 text-xs">/night</span>
-                                      {qty > 0 && (
-                                        <span className="ml-2 text-xs text-emerald-600 font-semibold">
-                                          = ETB {(room.price_per_night * qty * nights).toLocaleString()} total
-                                        </span>
-                                      )}
+                                      <span className={`text-xl font-extrabold ${isActive ? 'text-blue-600' : 'text-gray-800'}`}>
+                                        ETB {room.price_per_night?.toLocaleString()}
+                                      </span>
+                                      <span className="text-gray-400 text-xs ml-1">/night</span>
                                     </div>
-                                    <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">✓ Available</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                      isActive ? 'bg-blue-600 text-white' : 'bg-emerald-100 text-emerald-700'
+                                    }`}>
+                                      {isActive ? '✓ Selected' : '✓ Available'}
+                                    </span>
                                   </div>
+
+                                  {/* Quantity stepper — only shown when selected */}
+                                  <AnimatePresence>
+                                    {isActive && (
+                                      <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="overflow-hidden">
+                                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-blue-200">
+                                          <div className="text-xs text-blue-600 font-semibold">
+                                            {qty} room{qty > 1 ? 's' : ''} × {nights} night{nights > 1 ? 's' : ''} =
+                                            <span className="text-blue-700 font-extrabold ml-1">ETB {rTotal.toLocaleString()}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                            <span className="text-xs text-blue-500">Qty:</span>
+                                            <button
+                                              onClick={() => { if (qty > 1) setRoomQty(q => ({ ...q, [room.id]: qty - 1 })) }}
+                                              disabled={qty <= 1}
+                                              className="w-7 h-7 rounded-full bg-white border-2 border-blue-300 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all">
+                                              <Minus size={12} />
+                                            </button>
+                                            <span className="w-5 text-center font-extrabold text-blue-700 text-sm">{qty}</span>
+                                            <button
+                                              onClick={() => { if (qty < 2) setRoomQty(q => ({ ...q, [room.id]: qty + 1 })) }}
+                                              disabled={qty >= 2}
+                                              className="w-7 h-7 rounded-full bg-white border-2 border-blue-300 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white disabled:opacity-30 transition-all">
+                                              <Plus size={12} />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
                                 </div>
                               </div>
                             </motion.div>
@@ -350,10 +402,10 @@ export default function HotelDetail() {
                       </div>
                     )}
 
-                    {/* Occupied rooms */}
+                    {/* Occupied rooms — shown grayed out with checkout date */}
                     {occupiedRooms.length > 0 && (
-                      <div className="space-y-2 mt-4">
-                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Not Available for Selected Dates</p>
+                      <div className="space-y-2 mt-5">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Not Available for These Dates</p>
                         {occupiedRooms.map((room: any) => (
                           <div key={room.id}
                             className="border border-gray-200 rounded-xl p-3 bg-gray-50 opacity-75">
@@ -510,8 +562,9 @@ export default function HotelDetail() {
                 <button onClick={handleBook}
                   disabled={selectedRooms.length === 0 || roomsLoading}
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-base hover:bg-blue-700 active:scale-[.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md">
-                  {selectedRooms.length === 0 ? 'Select a Room' : `Book ${totalRooms} Room${totalRooms > 1 ? 's' : ''}`}
-                  <ChevronRight size={18} />
+                  {selectedRooms.length === 0
+                    ? '← Select a Room'
+                    : `Book ${totalRooms} Room${totalRooms > 1 ? 's' : ''} →`}
                 </button>
 
                 {!isAuthenticated && selectedRooms.length > 0 && (
@@ -528,6 +581,38 @@ export default function HotelDetail() {
           </div>
         </div>
       </div>
+
+      {/* ── Sticky bottom Book Now bar — appears when rooms selected ── */}
+      <AnimatePresence>
+        {selectedRooms.length > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 28 }}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl px-4 py-3 safe-area-bottom">
+            <div className="max-w-2xl mx-auto flex items-center gap-4">
+              {/* Summary */}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 truncate">
+                  {selectedRooms.map(x => `${x.qty}× ${x.room.name}`).join(', ')}
+                </p>
+                <p className="text-lg font-extrabold text-blue-600">
+                  ETB {totalPrice.toLocaleString()}
+                  <span className="text-gray-400 text-xs font-normal ml-1">· {nights} night{nights > 1 ? 's' : ''}</span>
+                </p>
+              </div>
+              {/* Book button */}
+              <button
+                onClick={handleBook}
+                className="flex-shrink-0 bg-blue-600 text-white px-7 py-3 rounded-xl font-bold text-base hover:bg-blue-700 active:scale-[.97] transition-all shadow-lg shadow-blue-200 flex items-center gap-2">
+                Book Now <ChevronRight size={20} />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Footer />
     </>
   )
