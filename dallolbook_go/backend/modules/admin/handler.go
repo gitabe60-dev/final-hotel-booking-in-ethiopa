@@ -779,3 +779,64 @@ func (h *Handler) VerifyPayment(c *gin.Context) {
 
 	utils.Success(c, "Payment "+body.Status+".", nil)
 }
+
+// ─── Hotel Manager: Payment Methods CRUD ──────────────────────────────────────
+// GET /api/admin/manager/payment-methods
+func (h *Handler) ManagerGetPaymentMethods(c *gin.Context) {
+	adminID := c.GetInt("admin_id")
+	hotelID := h.model.GetManagerHotelID(adminID)
+	methods, _ := h.model.GetHotelPaymentMethods(hotelID)
+	utils.Success(c, "Payment methods.", methods)
+}
+
+// POST /api/admin/manager/payment-methods
+func (h *Handler) ManagerAddPaymentMethod(c *gin.Context) {
+	adminID := c.GetInt("admin_id")
+	hotelID := h.model.GetManagerHotelID(adminID)
+	var body struct {
+		Method        string `json:"method"`
+		AccountName   string `json:"account_name"`
+		AccountNumber string `json:"account_number"`
+		PhoneNumber   string `json:"phone_number"`
+		Instructions  string `json:"instructions"`
+	}
+	c.ShouldBindJSON(&body)
+	if body.Method == "" {
+		utils.BadRequest(c, "Payment method is required")
+		return
+	}
+	id, err := h.model.AddPaymentMethod(hotelID, body.Method, body.AccountName, body.AccountNumber, body.PhoneNumber, body.Instructions)
+	if err != nil {
+		utils.ServerError(c, "Failed to add payment method (may already exist for this hotel)")
+		return
+	}
+	utils.Created(c, "Payment method added.", gin.H{"id": id})
+}
+
+// PUT /api/admin/manager/payment-methods/:id
+func (h *Handler) ManagerUpdatePaymentMethod(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	var body struct {
+		AccountName   string `json:"account_name"`
+		AccountNumber string `json:"account_number"`
+		PhoneNumber   string `json:"phone_number"`
+		Instructions  string `json:"instructions"`
+		IsActive      bool   `json:"is_active"`
+	}
+	c.ShouldBindJSON(&body)
+	if err := h.model.UpdatePaymentMethod(id, body.AccountName, body.AccountNumber, body.PhoneNumber, body.Instructions, body.IsActive); err != nil {
+		utils.ServerError(c, "Failed to update payment method")
+		return
+	}
+	utils.Success(c, "Payment method updated.", nil)
+}
+
+// DELETE /api/admin/manager/payment-methods/:id
+func (h *Handler) ManagerDeletePaymentMethod(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	if _, err := h.model.db.Exec(`DELETE FROM hotel_payment_methods WHERE id=$1`, id); err != nil {
+		utils.ServerError(c, "Failed to delete payment method")
+		return
+	}
+	utils.Success(c, "Payment method deleted.", nil)
+}

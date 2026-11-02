@@ -98,6 +98,11 @@ func Register(rg *gin.RouterGroup, db *sql.DB, cfg *config.Config) {
 			manager.POST("/bookings/:id/status",   h.UpdateBookingStatus)
 		manager.GET("/payments",               h.ManagerPayments)
 		manager.POST("/payments/:id/verify",   h.VerifyPayment)
+		// Hotel manager: manage their own hotel's payment methods
+		manager.GET("/payment-methods",             h.ManagerGetPaymentMethods)
+		manager.POST("/payment-methods",            h.ManagerAddPaymentMethod)
+		manager.PUT("/payment-methods/:id",         h.ManagerUpdatePaymentMethod)
+		manager.DELETE("/payment-methods/:id",      h.ManagerDeletePaymentMethod)
 			manager.GET("/inbox",                  h.Inbox)
 			manager.GET("/messages/:id",           h.ViewMessage)
 			manager.POST("/messages",              h.SendMessage)

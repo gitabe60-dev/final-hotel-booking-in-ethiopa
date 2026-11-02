@@ -27,11 +27,12 @@ const NAV: Record<string, { label: string; to: string; icon: string }[]> = {
     { label: 'Inbox',     to: '/admin/broker/inbox',     icon: '📨' },
   ],
   hotel_manager: [
-    { label: 'Dashboard', to: '/admin/manager/dashboard', icon: '📊' },
-    { label: 'Rooms',     to: '/admin/manager/rooms',     icon: '🛏️' },
-    { label: 'Bookings',  to: '/admin/manager/bookings',  icon: '📅' },
-    { label: 'Payments',  to: '/admin/manager/payments',  icon: '💳' },
-    { label: 'Settings',  to: '/admin/manager/settings',  icon: '⚙️' },
+    { label: 'Dashboard',       to: '/admin/manager/dashboard',       icon: '📊' },
+    { label: 'Rooms',           to: '/admin/manager/rooms',           icon: '🛏️' },
+    { label: 'Bookings',        to: '/admin/manager/bookings',        icon: '📅' },
+    { label: 'Verify Payments', to: '/admin/manager/payments',        icon: '✅' },
+    { label: 'Payment Methods', to: '/admin/manager/payment-methods', icon: '💳' },
+    { label: 'Settings',        to: '/admin/manager/settings',        icon: '⚙️' },
   ],
 }
 

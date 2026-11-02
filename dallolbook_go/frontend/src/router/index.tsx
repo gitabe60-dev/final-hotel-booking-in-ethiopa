@@ -42,6 +42,7 @@ import ManagersPage    from '../pages/admin/subadmin/ManagersPage'
 import ManagerRoomsPage    from '../pages/admin/manager/RoomsPage'
 import ManagerBookingsPage from '../pages/admin/manager/BookingsPage'
 import ManagerPaymentsPage from '../pages/admin/manager/PaymentsPage'
+import ManagerPaymentMethodsPage from '../pages/admin/manager/PaymentMethodsPage'
 
 // Shared settings page (accepts role prop)
 import SettingsPage from '../pages/admin/SettingsPage'
@@ -107,6 +108,7 @@ export default function AppRouter() {
       <Route path="/admin/manager/rooms"    element={<AdminRoute role="hotel_manager"><ManagerRoomsPage /></AdminRoute>} />
       <Route path="/admin/manager/bookings"  element={<AdminRoute role="hotel_manager"><ManagerBookingsPage /></AdminRoute>} />
       <Route path="/admin/manager/payments" element={<AdminRoute role="hotel_manager"><ManagerPaymentsPage /></AdminRoute>} />
+      <Route path="/admin/manager/payment-methods" element={<AdminRoute role="hotel_manager"><ManagerPaymentMethodsPage /></AdminRoute>} />
       <Route path="/admin/manager/settings"  element={<AdminRoute role="hotel_manager"><SettingsPage role="hotel_manager" /></AdminRoute>} />
 
       {/* ── Fallback ───────────────────────────────────── */}

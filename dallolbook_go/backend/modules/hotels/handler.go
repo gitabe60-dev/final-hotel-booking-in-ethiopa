@@ -106,7 +106,14 @@ func (h *Handler) PaymentMethods(c *gin.Context) {
 	if methods == nil {
 		methods = []PaymentMethod{}
 	}
-	utils.Success(c, "Payment methods.", methods)
+	// Also return the hotel manager's contact info so guests can reach out directly
+	managerName, managerPhone, managerEmail := h.model.GetHotelManagerContact(id)
+	utils.Success(c, "Payment methods.", gin.H{
+		"methods":       methods,
+		"manager_name":  managerName,
+		"manager_phone": managerPhone,
+		"manager_email": managerEmail,
+	})
 }
 
 // POST /api/v1/hotels/:id/reviews  (JWT protected)

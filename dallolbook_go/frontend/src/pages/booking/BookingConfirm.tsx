@@ -94,6 +94,8 @@ export default function BookingConfirm() {
   const [submitting, setSub]    = useState(false)
   const [payMethods, setPayMethods] = useState<any[]>([])
   const [pmLoading, setPmLoad]  = useState(true)
+  const [managerPhone, setManagerPhone] = useState('')
+  const [managerName,  setManagerName]  = useState('')
   const [touched, setTouched]   = useState<Record<string, boolean>>({})
   const [uploading, setUploading] = useState<Record<string, boolean>>({})
 
@@ -138,8 +140,12 @@ export default function BookingConfirm() {
     if (!id) return
     hotelService.getPaymentMethods(Number(id))
       .then(res => {
-        const m = res.data.data || []
+        // API now returns { methods: [...], manager_name, manager_phone, manager_email }
+        const d = res.data.data
+        const m = Array.isArray(d) ? d : (d?.methods || [])
         setPayMethods(m)
+        setManagerPhone(d?.manager_phone || '')
+        setManagerName(d?.manager_name || '')
         if (m.length > 0) setForm(f => ({ ...f, payment_method: m[0].method }))
       })
       .catch(() => {})
@@ -600,9 +606,23 @@ export default function BookingConfirm() {
                     </div>
                   ) : payMethods.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">
-                      <CreditCard size={36} className="mx-auto mb-2 opacity-40" />
-                      <p className="text-sm font-medium">No payment methods configured for this hotel.</p>
-                      <p className="text-xs mt-1">Contact the hotel directly to arrange payment.</p>
+                      <CreditCard size={36} className="mx-auto mb-3 opacity-40" />
+                      <p className="text-sm font-medium text-gray-600">No payment methods configured for this hotel.</p>
+                      {(managerPhone || managerName) && (
+                        <div className="mt-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-left max-w-xs mx-auto">
+                          <p className="text-xs text-blue-700 font-semibold mb-1">Contact the hotel manager directly:</p>
+                          {managerName && <p className="text-sm font-bold text-blue-800">{managerName}</p>}
+                          {managerPhone && (
+                            <a href={`tel:${managerPhone}`}
+                              className="flex items-center gap-2 text-blue-700 font-black text-lg font-mono mt-1 hover:text-blue-900">
+                              <Phone size={16} /> {managerPhone}
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {!managerPhone && !managerName && (
+                        <p className="text-xs mt-1">Contact the hotel directly to arrange payment.</p>
+                      )}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

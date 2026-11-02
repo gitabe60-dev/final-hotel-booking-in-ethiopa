@@ -73,6 +73,11 @@ export const adminService = {
   updateBookingStatus:(id: number, status: string) => adminApi.post(`/manager/bookings/${id}/status`, { status }),
   managerPayments:    () => adminApi.get('/manager/payments'),
   verifyPayment:      (id: number, status: 'approved' | 'rejected') => adminApi.post(`/manager/payments/${id}/verify`, { status }),
+  // Hotel manager: manage their own hotel's payment methods
+  managerGetPaymentMethods:    ()                     => adminApi.get('/manager/payment-methods'),
+  managerAddPaymentMethod:     (data: any)            => adminApi.post('/manager/payment-methods', data),
+  managerUpdatePaymentMethod:  (id: number, data: any)=> adminApi.put(`/manager/payment-methods/${id}`, data),
+  managerDeletePaymentMethod:  (id: number)           => adminApi.delete(`/manager/payment-methods/${id}`),
   managerInbox:       () => adminApi.get('/manager/inbox'),
   managerMessage:     (id: number) => adminApi.get(`/manager/messages/${id}`),
   managerSendMessage: (data: any) => adminApi.post('/manager/messages', data),

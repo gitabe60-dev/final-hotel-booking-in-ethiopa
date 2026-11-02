@@ -423,3 +423,15 @@ func (m *Model) scanHotels(rows *sql.Rows) ([]Hotel, error) {
 	}
 	return hotels, nil
 }
+
+// GetHotelManagerContact returns the hotel manager's name, phone, and email for a given hotel.
+func (m *Model) GetHotelManagerContact(hotelID int) (name, phone, email string) {
+	m.db.QueryRow(`
+		SELECT COALESCE(au.full_name,''), COALESCE(au.phone,''), COALESCE(au.email,'')
+		FROM hotel_managers hm
+		JOIN admin_users au ON au.id = hm.admin_id
+		WHERE hm.hotel_id = $1
+		LIMIT 1`, hotelID,
+	).Scan(&name, &phone, &email)
+	return
+}
