@@ -1,0 +1,89 @@
+name: booking_multipurpose_platform
+description: "Dallol Booking - Ethiopian Hotel Booking Platform"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:      # EN / AM language support
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  provider: ^6.1.2
+
+  # Networking
+  http: ^1.2.1
+  dio: ^5.4.3+1
+
+  # Storage
+  shared_preferences: ^2.2.3
+
+  # UI / Image
+  cached_network_image: ^3.3.1
+  carousel_slider: ^5.0.0
+  shimmer: ^3.0.0
+  flutter_rating_bar: ^4.0.1
+  image_picker: ^1.1.2
+
+  # Google Maps / Location
+  url_launcher: ^6.3.0        # Opens maps.google.com link
+
+  # Utils
+  intl: ^0.20.3
+  flutter_svg: ^2.0.10+1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true              # needed for flutter_localizations
+  assets:
+    # ── App branding ──────────────────────────────────────────────────────────
+    - assets/images/app/
+    - assets/images/onboarding/
+    - assets/images/placeholders/
+    - assets/icons/
+
+    # ── City cover images ─────────────────────────────────────────────────────
+    - assets/images/cities/addis_ababa/
+    - assets/images/cities/bahir_dar/
+    - assets/images/cities/hawassa/
+    - assets/images/cities/dire_dawa/
+    - assets/images/cities/mekelle/
+    - assets/images/cities/gondar/
+    - assets/images/cities/adama/
+    - assets/images/cities/jimma/
+    - assets/images/cities/harar/
+    - assets/images/cities/arba_minch/
+    - assets/images/cities/dessie/
+    - assets/images/cities/deberberhan/
+    - assets/images/cities/debermarkos/
+
+    # ── Hotel images (Addis Ababa) ─────────────────────────────────────────────
+    - assets/images/hotels/addis_ababa/sheraton_addis/
+    - assets/images/hotels/addis_ababa/hilton_addis/
+
+    # ── Hotel images (Bahir Dar) ───────────────────────────────────────────────
+    - assets/images/hotels/bahir_dar/kuriftu_resort/
+    - assets/images/hotels/bahir_dar/lewi_resort/
+
+    # ── Hotel images (Hawassa) ─────────────────────────────────────────────────
+    - assets/images/hotels/hawassa/haile_resort/
+    - assets/images/hotels/hawassa/fam_hotel/
+
+    # ── Hotel images (other cities) ───────────────────────────────────────────
+    - assets/images/hotels/dire_dawa/ras_hotel/
+    - assets/images/hotels/mekelle/axum_hotel/
+    - assets/images/hotels/gondar/goha_hotel/
+    - assets/images/hotels/adama/kuriftu_adama/
+    - assets/images/hotels/harar/harar_lodge/
+    - assets/images/hotels/deberberhan/hiwot_hotel/
+    - assets/images/hotels/debermarkos/fm_hotel/

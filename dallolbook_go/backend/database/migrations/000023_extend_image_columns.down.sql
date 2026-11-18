@@ -1,0 +1,2 @@
+-- 000023_extend_image_columns.down.sql
+-- Nothing to revert

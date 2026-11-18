@@ -1,0 +1,57 @@
+# ── Flutter / Dart ────────────────────────────────────────────────────────────
+booking_mobilapp/.dart_tool/
+booking_mobilapp/build/
+booking_mobilapp/.flutter-plugins
+booking_mobilapp/.flutter-plugins-dependencies
+booking_mobilapp/.pub-cache/
+booking_mobilapp/.packages
+booking_mobilapp/pubspec.lock
+booking_mobilapp/**/*.g.dart
+booking_mobilapp/**/*.freezed.dart
+
+# ── Go backend ────────────────────────────────────────────────────────────────
+dallolbook_go/backend/tmp/
+dallolbook_go/backend/*.exe
+dallolbook_go/backend/app
+dallolbook_go/backend/.env
+dallolbook_go/backend/vendor/
+
+# ── Go frontend (web) ─────────────────────────────────────────────────────────
+dallolbook_go/frontend/node_modules/
+dallolbook_go/frontend/dist/
+dallolbook_go/frontend/.env
+dallolbook_go/frontend/.env.local
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+*.env
+.env.*
+*.pem
+*.key
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Android generated ─────────────────────────────────────────────────────────
+booking_mobilapp/android/.gradle/
+booking_mobilapp/android/local.properties
+booking_mobilapp/android/key.properties
+booking_mobilapp/android/app/google-services.json
+
+# ── iOS generated ─────────────────────────────────────────────────────────────
+booking_mobilapp/ios/.symlinks/
+booking_mobilapp/ios/Pods/
+booking_mobilapp/ios/Runner.xcworkspace/xcuserdata/
+booking_mobilapp/ios/Flutter/Flutter.framework
+
+# ── Linux generated ───────────────────────────────────────────────────────────
+booking_mobilapp/linux/flutter/generated_plugin_registrant.cc
+booking_mobilapp/linux/flutter/generated_plugin_registrant.h
+booking_mobilapp/linux/flutter/generated_plugins.cmake
+
+# ── Chrome device test data ───────────────────────────────────────────────────
+booking_mobilapp/.dart_tool/chrome-device/
