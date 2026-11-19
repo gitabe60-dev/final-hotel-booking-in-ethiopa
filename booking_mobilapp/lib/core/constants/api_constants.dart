@@ -9,8 +9,15 @@
 
 class ApiConstants {
   // ── Environment switch ────────────────────────────────────────────────────
-  static const String _env   = 'dev';       // ← change this
-  static const String _lanIp = '192.168.1.100'; // ← set your machine's LAN IP for physical device
+  // 'dev'     → localhost:8080  (Linux desktop + Chrome web + iOS simulator)
+  // 'android' → 10.0.2.2:8080  (Android emulator only)
+  // 'device'  → LAN IP          (physical Android phone — your PC's WiFi IP)
+  // 'prod'    → production URL
+  //
+  // IMPORTANT: Both phone and PC must be on the same WiFi network.
+  // Run `ip route get 8.8.8.8` on PC to find your LAN IP.
+  static const String _env   = 'device';        // ← 'device' for real phone
+  static const String _lanIp = '10.129.157.43'; // ← your PC's current IP
 
   static const String _devBase     = 'http://localhost:8080';
   static const String _androidBase = 'http://10.0.2.2:8080';
