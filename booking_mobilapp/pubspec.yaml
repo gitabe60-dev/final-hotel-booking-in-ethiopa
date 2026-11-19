@@ -37,6 +37,10 @@ dependencies:
   intl: ^0.20.3
   flutter_svg: ^2.0.10+1
 
+dependency_overrides:
+  # Pin to 2.0.22 — requires AGP 8.5.1 which IS cached (2.0.35 requires 8.13.1 which is NOT cached)
+  flutter_plugin_android_lifecycle: 2.0.22
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
