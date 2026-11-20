@@ -212,8 +212,17 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
     if ((_adults + _children) > _capacity) {
       showError(context, 'Total guests exceed room capacity ($_capacity)'); return;
     }
-    // ID upload is OPTIONAL (same as web) — user can upload at check-in
-    // No block here — just navigate to payment step
+    // National ID / Passport front is REQUIRED
+    if (_idFrontB64 == null) {
+      showError(context, 'Please upload your National ID / Passport (front side)');
+      return;
+    }
+    // National ID / Passport back is REQUIRED
+    if (_idBackB64 == null) {
+      showError(context, 'Please upload your National ID / Passport (back side)');
+      return;
+    }
+    // All checks passed — proceed to payment step
     setState(() => _step = 2);
   }
 
@@ -224,6 +233,9 @@ class _BookingConfirmScreenState extends State<BookingConfirmScreen> {
       showError(context, V.transactionId(_txnCtrl.text)!); return;
     }
     if (_screenshotB64 == null)           { showError(context, 'Payment screenshot is required'); return; }
+    // Safety net — verify national ID images are still present
+    if (_idFrontB64 == null)              { showError(context, 'National ID (front) is missing — go back to Step 1'); return; }
+    if (_idBackB64 == null)               { showError(context, 'National ID (back) is missing — go back to Step 1'); return; }
 
     setState(() => _submitting = true);
     final bp = context.read<BookingProvider>();
@@ -561,11 +573,29 @@ class _Step1Body extends StatelessWidget {
 
           // ── National ID ──────────────────────────────────────────────────
           _Section(icon: Icons.badge_outlined, title: 'National ID / Passport',
-            subtitle: 'Required for check-in verification (front & back)',
-            child: Row(children: [
-              Expanded(child: _IdBox(label: 'Front *', b64: idFrontB64, uploading: uploadingFront, onTap: onPickFront)),
-              const SizedBox(width: 12),
-              Expanded(child: _IdBox(label: 'Back *', b64: idBackB64, uploading: uploadingBack, onTap: onPickBack)),
+            subtitle: 'Required — you cannot proceed without uploading both sides',
+            child: Column(children: [
+              Row(children: [
+                Expanded(child: _IdBox(label: 'Front *', b64: idFrontB64, uploading: uploadingFront, onTap: onPickFront)),
+                const SizedBox(width: 12),
+                Expanded(child: _IdBox(label: 'Back *', b64: idBackB64, uploading: uploadingBack, onTap: onPickBack)),
+              ]),
+              if (idFrontB64 == null || idBackB64 == null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(
+                      idFrontB64 == null && idBackB64 == null
+                          ? 'Upload both front and back of your ID'
+                          : idFrontB64 == null
+                              ? 'Front side of ID is required'
+                              : 'Back side of ID is required',
+                      style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w600),
+                    )),
+                  ]),
+                ),
             ]),
           ),
           const SizedBox(height: 24),
@@ -1243,8 +1273,8 @@ class _IdBox extends StatelessWidget {
             color:        hasImg ? AppColors.successLight : AppColors.surfaceGray,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: hasImg ? AppColors.success : AppColors.border,
-              width: hasImg ? 2 : 1,
+              color: hasImg ? AppColors.success : Colors.red,
+              width: hasImg ? 2 : 1.5,
             ),
           ),
           clipBehavior: Clip.hardEdge,

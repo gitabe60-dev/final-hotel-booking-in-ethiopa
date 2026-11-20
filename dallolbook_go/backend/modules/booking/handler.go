@@ -62,6 +62,12 @@ func (h *Handler) Create(c *gin.Context) {
 		utils.Unprocessable(c, "hotel_id, check_in, check_out, adults, rooms, payment_method are required")
 		return
 	}
+	// National ID / Passport front and back are REQUIRED
+	if body.NationalIDFront == nil || *body.NationalIDFront == "" ||
+		body.NationalIDBack == nil || *body.NationalIDBack == "" {
+		utils.Unprocessable(c, "National ID / Passport front and back images are required")
+		return
+	}
 	// Enforce maximum 2 rooms per booking
 	if body.Rooms > 2 {
 		utils.Unprocessable(c, "Maximum 2 rooms can be booked at a time")
