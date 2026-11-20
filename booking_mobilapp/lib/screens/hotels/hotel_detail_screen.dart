@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,6 +9,7 @@ import '../../core/constants/app_images.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/hotel.dart';
 import '../../widgets/local_or_network_image.dart';
+import '../../widgets/hotel_image.dart';
 import '../../models/review.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/hotel_provider.dart';
@@ -489,13 +491,10 @@ class _GallerySection extends StatelessWidget {
                 controller:    controller,
                 itemCount:     images.length,
                 onPageChanged: onPageChanged,
-                itemBuilder: (_, i) => CachedNetworkImage(
+                itemBuilder: (_, i) => HotelImage(
                   imageUrl:    images[i],
                   fit:         BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                      color: AppColors.surfaceGray,
-                      child: const Center(child: AppSpinner())),
-                  errorWidget: (_, __, ___) => Container(
+                  errorWidget: Container(
                       color: AppColors.surfaceGray,
                       child: const Icon(Icons.hotel_outlined,
                           size: 56, color: AppColors.textHint)),
@@ -1033,7 +1032,7 @@ class _RoomsTabState extends State<_RoomsTab>
                   tag: 'hotel-cover-${hotel.id}',
                   child: LocalOrNetworkImage(
                     localPath:   AppImages.hotelCover(hotel.name),
-                    networkUrl:  hotel.thumbnailUrl,
+                    networkUrl:  hotel.thumbnailUrl ?? AppImages.hotelNetworkUrl(hotel.name),
                     fit:         BoxFit.cover,
                     errorWidget: Container(
                       decoration: BoxDecoration(

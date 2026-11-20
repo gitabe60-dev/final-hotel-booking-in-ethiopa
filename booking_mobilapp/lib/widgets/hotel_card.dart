@@ -88,7 +88,7 @@ class _GridCardState extends State<_GridCard>
                 child: Stack(fit: StackFit.expand, children: [
                   LocalOrNetworkImage(
                     localPath:   AppImages.hotelCover(h.name),
-                    networkUrl:  h.thumbnailUrl,
+                    networkUrl:  h.thumbnailUrl ?? AppImages.hotelNetworkUrl(h.name),
                     fit:         BoxFit.cover,
                     errorWidget: _HotelPlaceholder(name: h.name),
                   ),
@@ -235,7 +235,7 @@ class _ListCardState extends State<_ListCard>
                   child: Stack(fit: StackFit.expand, children: [
                     LocalOrNetworkImage(
                       localPath:   AppImages.hotelCover(h.name),
-                      networkUrl:  h.thumbnailUrl,
+                      networkUrl:  h.thumbnailUrl ?? AppImages.hotelNetworkUrl(h.name),
                       fit:         BoxFit.cover,
                       errorWidget: _HotelPlaceholder(name: h.name),
                     ),
