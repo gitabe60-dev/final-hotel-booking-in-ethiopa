@@ -21,7 +21,7 @@
         android:label="EthioStay"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:requestLegacyExternalStorage="true"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config"
@@ -60,10 +60,7 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-        <!-- Disable Impeller on Android to avoid rendering validation warnings -->
-        <meta-data
-            android:name="io.flutter.embedding.android.EnableImpeller"
-            android:value="false" />
+        <!-- Impeller enabled (default) for best performance on Android 15 -->
     </application>
 
     <queries>
