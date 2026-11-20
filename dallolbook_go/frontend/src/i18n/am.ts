@@ -18,6 +18,20 @@ const am = {
     quickLinks: 'ፈጣን አገናኞች',
     contact:    'ያግኙን',
     copyright:  'የሆቴል ቦኪንግ። መብቱ በህግ የተጠበቀ ነው።',
+    // Mobile app section
+    getApp:     'የEthioStay መተግበሪያ ያውርዱ',
+    getAppSub:  'በስልክዎ ሆቴሎችን በፍጥነት ይያዙ። በቅርቡ በAndroid እና iOS ይቀርባል።',
+    playStore:  'Google Play ላይ ያግኙ',
+    appStore:   'App Store ላይ ያውርዱ',
+    scanQr:     'ለማውረድ ይቃኙ',
+    comingSoon: 'በቅርቡ',
+    feature1:   'በሰከንዶች ይያዙ',
+    feature2:   'ቀጥታ ተገኝነት',
+    feature3:   'ልዩ የሞባይል ቅናሾች',
+    feature4:   'ከኢንተርኔት ውጪ ከተማ ማሰስ',
+    followUs:   'ይከተሉን',
+    madeWith:   'በኢትዮጵያ ❤️ ተሰርቷል',
+    allRights:  'መብቱ በህግ የተጠበቀ ነው።',
   },
 
   // ── Home page ───────────────────────────────────────────────────────────────

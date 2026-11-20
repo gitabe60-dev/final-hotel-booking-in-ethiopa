@@ -18,6 +18,20 @@ const en = {
     quickLinks: 'Quick Links',
     contact:    'Contact',
     copyright:  'Hotel Booking. All rights reserved.',
+    // Mobile app section
+    getApp:        'Get the EthioStay App',
+    getAppSub:     'Book hotels faster on your phone. Available soon on Android & iOS.',
+    playStore:     'Get it on Google Play',
+    appStore:      'Download on the App Store',
+    scanQr:        'Scan to download',
+    comingSoon:    'Coming Soon',
+    feature1:      'Book in seconds',
+    feature2:      'Real-time availability',
+    feature3:      'Exclusive mobile deals',
+    feature4:      'Offline city browsing',
+    followUs:      'Follow Us',
+    madeWith:      'Made with ❤️ in Ethiopia',
+    allRights:     'All rights reserved.',
   },
 
   // ── Home page ───────────────────────────────────────────────────────────────
