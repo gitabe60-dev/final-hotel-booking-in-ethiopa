@@ -1,9 +1,15 @@
 /// local_or_network_image.dart
 ///
-/// Priority: local asset → network URL → placeholder
-/// Used for city cards and hotel cards to show real local photos.
+/// Priority:
+///   - Mobile: local asset → network URL → placeholder
+///   - Web:    network URL → local asset → placeholder
+///
+/// On web, Image.asset still works for bundled assets, but on first load
+/// the network URL is more reliable. On web we try network first so the
+/// city/hotel images always show regardless of asset bundling behavior.
 library;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import 'hotel_image.dart';
@@ -30,6 +36,23 @@ class LocalOrNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // On WEB: try network URL first (always reliable),
+    // fall back to local asset if network fails
+    if (kIsWeb) {
+      if (networkUrl != null && networkUrl!.isNotEmpty) {
+        return HotelImage(
+          imageUrl:    networkUrl,
+          width:       width,
+          height:      height,
+          fit:         fit,
+          errorWidget: _localAsset() ?? errorWidget ?? _fallback(),
+        );
+      }
+      return _localAsset() ?? errorWidget ?? _fallback();
+    }
+
+    // On MOBILE: try local asset first (bundled in APK — no internet needed),
+    // fall back to network URL
     if (localPath != null && localPath!.isNotEmpty) {
       return Image.asset(
         localPath!,
@@ -42,6 +65,19 @@ class LocalOrNetworkImage extends StatelessWidget {
     return _network();
   }
 
+  /// Load local bundled asset (works on both mobile and web).
+  Widget? _localAsset() {
+    if (localPath == null || localPath!.isEmpty) return null;
+    return Image.asset(
+      localPath!,
+      width:  width,
+      height: height,
+      fit:    fit,
+      errorBuilder: (_, __, ___) => errorWidget ?? _fallback(),
+    );
+  }
+
+  /// Load from network URL.
   Widget _network() {
     if (networkUrl != null && networkUrl!.isNotEmpty) {
       return HotelImage(

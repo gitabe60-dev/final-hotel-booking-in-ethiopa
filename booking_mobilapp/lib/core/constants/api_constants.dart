@@ -1,23 +1,23 @@
 // lib/core/constants/api_constants.dart
 //
 // SINGLE SOURCE OF TRUTH for all API URLs.
-// Change _env to switch targets:
-//   'dev'     → localhost:8080  (Linux desktop + Chrome web + iOS simulator)
-//   'android' → 10.0.2.2:8080  (Android emulator)
-//   'device'  → LAN IP          (physical device — set _lanIp below)
-//   'prod'    → production URL
+// Auto-detects: uses localhost for web browser, LAN IP for mobile devices.
+// This prevents the white-screen issue in the browser.
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiConstants {
   // ── Environment switch ────────────────────────────────────────────────────
+  // 'auto'   → auto-detect: localhost for web, LAN IP for mobile (RECOMMENDED)
   // 'dev'     → localhost:8080  (Linux desktop + Chrome web + iOS simulator)
-  // 'android' → 10.0.2.2:8080  (Android emulator only)
-  // 'device'  → LAN IP          (physical Android phone — your PC's WiFi IP)
+  // 'android' → 10.0.2.2:8080  (Android emulator)
+  // 'device'  → LAN IP          (physical device — set _lanIp below)
   // 'prod'    → production URL
   //
-  // IMPORTANT: Both phone and PC must be on the same WiFi network.
+  // IMPORTANT: For 'device' mode, both phone and PC must be on the same WiFi.
   // Run `ip route get 8.8.8.8` on PC to find your LAN IP.
-  static const String _env   = 'device';        // ← 'device' for real phone
-  static const String _lanIp = '10.129.156.183'; // ← your PC's current IP
+  static const String _env   = 'auto';         // ← 'auto' = auto-detect
+  static const String _lanIp = '10.129.160.236'; // ← your PC's current IP
 
   static const String _devBase     = 'http://localhost:8080';
   static const String _androidBase = 'http://10.0.2.2:8080';
@@ -25,6 +25,10 @@ class ApiConstants {
   static const String _prodBase    = 'https://api.dallolbook.com';
 
   static String get host {
+    // Auto mode: web → localhost, mobile → LAN IP
+    if (_env == 'auto') {
+      return kIsWeb ? _devBase : _deviceBase;
+    }
     switch (_env) {
       case 'android': return _androidBase;
       case 'device':  return _deviceBase;

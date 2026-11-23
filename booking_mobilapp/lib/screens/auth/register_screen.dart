@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -71,7 +70,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final f = await ImagePicker()
         .pickImage(source: ImageSource.gallery, imageQuality: 75, maxWidth: 1200);
     if (f == null) return null;
-    final bytes = await File(f.path).readAsBytes();
+    // Use XFile.readAsBytes() — works on web, desktop, and mobile
+    final bytes = await f.readAsBytes();
+    if (bytes.isEmpty) return null;
     return 'data:image/jpeg;base64,${base64Encode(bytes)}';
   }
 
