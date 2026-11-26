@@ -1,22 +1,21 @@
 /// local_or_network_image.dart
 ///
-/// Priority:
-///   - Mobile: local asset → network URL → placeholder
-///   - Web:    network URL → local asset → placeholder
+/// Priority (same on BOTH mobile and web):
+///   1. Local asset (bundled in APK/web build — your images from the city folders)
+///   2. Network URL (only used if local asset fails or is not provided)
+///   3. Placeholder (grey box with icon — always works)
 ///
-/// On web, Image.asset still works for bundled assets, but on first load
-/// the network URL is more reliable. On web we try network first so the
-/// city/hotel images always show regardless of asset bundling behavior.
+/// The city images you put in assets/images/cities/*/city.jpg
+/// are ALWAYS shown first. Network URL is only the backup.
 library;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import 'hotel_image.dart';
 
 class LocalOrNetworkImage extends StatelessWidget {
   final String? localPath;   // asset path e.g. 'assets/images/cities/addis_ababa/city.jpg'
-  final String? networkUrl;  // https:// or data: URL fallback
+  final String? networkUrl;  // https:// URL — only used if local asset fails
   final double? width;
   final double? height;
   final BoxFit  fit;
@@ -36,48 +35,25 @@ class LocalOrNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // On WEB: try network URL first (always reliable),
-    // fall back to local asset if network fails
-    if (kIsWeb) {
-      if (networkUrl != null && networkUrl!.isNotEmpty) {
-        return HotelImage(
-          imageUrl:    networkUrl,
-          width:       width,
-          height:      height,
-          fit:         fit,
-          errorWidget: _localAsset() ?? errorWidget ?? _fallback(),
-        );
-      }
-      return _localAsset() ?? errorWidget ?? _fallback();
-    }
-
-    // On MOBILE: try local asset first (bundled in APK — no internet needed),
-    // fall back to network URL
+    // LOCAL ASSET FIRST — works on mobile and web
+    // These are your images from assets/images/cities/ and assets/images/hotels/
     if (localPath != null && localPath!.isNotEmpty) {
       return Image.asset(
         localPath!,
         width:  width,
         height: height,
         fit:    fit,
-        errorBuilder: (_, __, ___) => _network(),
+        errorBuilder: (_, __, ___) {
+          // Local asset failed → try network URL
+          return _network();
+        },
       );
     }
+    // No local path provided → go straight to network
     return _network();
   }
 
-  /// Load local bundled asset (works on both mobile and web).
-  Widget? _localAsset() {
-    if (localPath == null || localPath!.isEmpty) return null;
-    return Image.asset(
-      localPath!,
-      width:  width,
-      height: height,
-      fit:    fit,
-      errorBuilder: (_, __, ___) => errorWidget ?? _fallback(),
-    );
-  }
-
-  /// Load from network URL.
+  /// Load from network URL (only used as fallback).
   Widget _network() {
     if (networkUrl != null && networkUrl!.isNotEmpty) {
       return HotelImage(

@@ -17,7 +17,7 @@ class ApiConstants {
   // IMPORTANT: For 'device' mode, both phone and PC must be on the same WiFi.
   // Run `ip route get 8.8.8.8` on PC to find your LAN IP.
   static const String _env   = 'auto';         // ← 'auto' = auto-detect
-  static const String _lanIp = '10.129.160.236'; // ← your PC's current IP
+  static const String _lanIp = '10.129.161.65'; // ← your PC's current IP
 
   static const String _devBase     = 'http://localhost:8080';
   static const String _androidBase = 'http://10.0.2.2:8080';
